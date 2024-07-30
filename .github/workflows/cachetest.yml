@@ -1,0 +1,19 @@
+name: cachetest
+
+on:
+  workflow_dispatch:
+  
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        java-version: ['21']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gowridurgad/setup-java-fork@testing-snap
+        with:
+          distribution: 'sapmachine'
+          java-version: ${{ matrix.java-version }}
+          cache: maven
+ 
