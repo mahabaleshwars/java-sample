@@ -1,4 +1,4 @@
-name: sap
+name: patchversions
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        java-version: ['11', '17', '21','8.0.282+8', '8.0.232', '11.0.4']
+        java-version: ['11', '17', '21','22', '21.0.4', '17.0.12', '11.0.24', '22.0.2']
     steps:
       - uses: actions/checkout@v4
       - uses: gowridurgad/setup-java-fork@testing-snap
