@@ -5,13 +5,10 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-    strategy:
-      matrix:
-        java-version: ['11', '17', '21']
     steps:
       - uses: actions/checkout@v4
       - uses: gowridurgad/setup-java-fork@testing-snap
         with:
           distribution: 'sapmachine'
-          java-version: ${{ matrix.java-version }}
+          java-version: '21'
           cache: maven
