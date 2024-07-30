@@ -1,15 +1,23 @@
 name: sap
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - testing-snap
+  pull_request:
+    branches:
+      - testing-snap
+
 jobs:
   build:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        java-version: ['11', '17', '21','8.0.282+8', '8.0.232', '11.0.4']
     steps:
       - uses: actions/checkout@v4
       - uses: gowridurgad/setup-java-fork@testing-snap
         with:
           distribution: 'sapmachine'
-          java-version: '21'
-          cache: maven
-     
+          java-version: ${{ matrix.java-version }}
+ 
