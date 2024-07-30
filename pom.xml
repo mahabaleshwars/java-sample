@@ -54,10 +54,6 @@
 	                    </goals>
 	                </execution>
 	            </executions>
-	            <configuration>
-	                <configLocation>checkstyle.xml</configLocation>
-	                <!-- You can customize other configuration options here -->
-	            </configuration>
 	        </plugin>
 	    </plugins>
 	</build>
