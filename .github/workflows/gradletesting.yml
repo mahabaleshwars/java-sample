@@ -1,4 +1,4 @@
-name: gpg
+name: gradletesting
 
 on:
    workflow_dispatch
