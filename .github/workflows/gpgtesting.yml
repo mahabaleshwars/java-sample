@@ -1,4 +1,4 @@
-name: cachecheck
+name: gpg
 
 on:
    workflow_dispatch
