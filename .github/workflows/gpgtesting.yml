@@ -1,0 +1,32 @@
+name: gpgtesting
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: gowridurgad/
+        with:
+          distribution: 'sapmachine'
+          java-version: '21'
+          cache: sbt
+         
+      - name: Install GPG
+        run: sudo apt-get install -y gnupg2
+
+      - name: Import GPG key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --edit-key YOUR_KEY_ID trust quit
+
+      - name: Run tests
+        run: sbt test
