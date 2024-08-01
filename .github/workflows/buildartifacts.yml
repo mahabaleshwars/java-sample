@@ -1,42 +1,51 @@
-name: Build and Upload Artifacts
 
-on:
+ name: Build and Upload Artifacts
+
+ on:
   workflow_dispatch:
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        java-version: [11, 17, 21]
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+ jobs:
+   build:
+     runs-on: ${{ matrix.os }}
 
-      - name: Set up JDK
-        uses: gowridurgad/setup-java-fork@testing-snap
-        with:
-          distribution: 'sapmachine'
-          java-version: ${{ matrix.java-version }}
+     strategy:
+       matrix:
+         os: [ubuntu-latest, macos-latest, windows-latest]
+         java-version: [11, 17, 21]
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven
+     steps:
+       - name: Checkout repository
+         uses: actions/checkout@v4
 
-      - name: Build project
-        run: mvn clean compile
+       - name: Set up JDK
+         uses: gowridurgad/setup-java-fork@testing-snap
+         with:
+           distribution: 'adopt'
+           java-version: ${{ matrix.java-version }}
 
-      - name: Run tests
-        run: mvn test
+       - name: Cache Maven dependencies
+         uses: actions/cache@v3
+         with:
+           path: ~/.m2/repository
+           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.java-version }}
+           restore-keys: ${{ runner.os }}-maven
 
-      - name: Package project
-        run: mvn package
+       - name: Build project
+         run: mvn clean compile
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts-${{ matrix.java-version }}
-          path: target/*.jar
+       - name: Run tests
+         run: mvn test
+
+       - name: Package project
+         run: mvn package
+
+       - name: Create ZIP archive
+         run: |
+           zip -r build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.zip target/*.jar
+
+       - name: Upload artifact
+         uses: actions/upload-artifact@v4
+         with:
+           name: build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}
+           path: build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.zip
+ ```
