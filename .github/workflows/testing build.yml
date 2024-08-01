@@ -1,0 +1,172 @@
+name: Build Java Artifacts
+run-name: Generate Java ${{ inputs.VERSION || '17' }}
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        description: 'Java version to build and upload'
+        default: '17'
+        required: true
+      PUBLISH_RELEASES:
+        description: 'Whether to publish releases'
+        required: true
+        type: boolean
+        default: false
+      PLATFORMS:
+        description: 'Platforms for execution in "os" or "os_arch" format (arch is "x64" by default)'
+        required: true
+        default: 'ubuntu-20.04,ubuntu-22.04,macos-12_x64,macos-14_arm64,windows-2019_x64,windows-2019_x86'
+
+env:
+  VERSION: ${{ inputs.VERSION || '17' }}
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  generate_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - name: Generate execution matrix
+        id: generate-matrix
+        run: |
+          [String[]]$configurations = "${{ inputs.platforms || 'ubuntu-20.04,ubuntu-22.04,macos-12_x64,macos-14_arm64,windows-2019_x64,windows-2019_x86' }}".Split(",").Trim()
+          $matrix = @()
+
+          foreach ($configuration in $configurations) {
+            $parts = $configuration.Split("_")
+            $os = $parts[0]
+            $arch = if ($parts[1]) {$parts[1]} else {"x64"}
+            switch -wildcard ($os) {
+              "*ubuntu*" { $platform = $os.Replace("ubuntu","linux")}
+              "*macos*" { $platform = 'darwin' }
+              "*windows*" { $platform = 'win32' }
+            }
+            
+            $matrix += @{
+              'platform' = $platform
+              'os' = $os
+              'arch' = $arch
+            }
+          }
+          echo "matrix=$($matrix | ConvertTo-Json -Compress -AsArray)" >> $env:GITHUB_OUTPUT
+
+  build_java:
+    needs: generate_matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate_matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    env:
+      ARTIFACT_NAME: java-${{ inputs.VERSION || '17' }}-${{ matrix.platform }}-${{ matrix.arch }}
+    steps:
+      - name: Setup Environment on Windows ARM64 Runner
+        if: matrix.os == 'setup-actions-windows-arm64-4-core'
+        shell: powershell
+        run: |
+            # Install Chocolatey
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+            echo "C:\ProgramData\Chocolatey\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        
+            # Install PowerShell
+            choco install powershell-core -y
+            echo "C:\Program Files\PowerShell\7" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        
+            # Install Git
+            choco install git -y
+            echo "C:\Program Files\Git\cmd" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        
+            
+             # Install 7-Zip
+            choco install 7zip -y
+            echo "C:\ProgramData\chocolatey\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up JDK ${{ env.VERSION }}
+        uses: gowridurgad/java-setp-fork@testing@snap
+        with:
+          distribution: 'sapmachine'
+          java-version: ${{ env.VERSION }}
+
+      - name: Build Java ${{ env.VERSION }}
+        run: |
+          ./gradlew build
+
+      - name: Publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+  test_java:
+    needs: [generate_matrix, build_java]
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate_matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    env:
+      ARTIFACT_NAME: java-${{ inputs.VERSION || '17' }}-${{ matrix.platform }}-${{ matrix.arch }}
+    steps:
+      - name: Setup Java ${{ env.VERSION }}
+        uses: gowridurgad/setup-java-fork@testing-snap
+        with:
+          distribution: 'adopt'
+          java-version: ${{ env.VERSION }}
+
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Run tests
+        run: ./gradlew test
+
+  publish_release:
+    name: Publish release
+    if: github.event_name == 'workflow_dispatch' && inputs.PUBLISH_RELEASES
+    needs: test_java
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+
+      - name: Publish Release ${{ env.VERSION }}
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.VERSION }}-${{ github.run_id }}
+          release_name: ${{ env.VERSION }}
+          body: |
+            Java ${{ env.VERSION }}
+
+      - name: Upload release assets
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const artifacts = fs.readdirSync('build/libs');
+            for (const artifact of artifacts) {
+              const filePath = path.join('build/libs', artifact);
+              console.log(`Uploading ${filePath}`);
+              github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: ${{ steps.create_release.outputs.id }},
+                name: artifact,
+                data: fs.readFileSync(filePath)
+              });
+            }
