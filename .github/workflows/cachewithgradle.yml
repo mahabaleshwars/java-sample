@@ -1,0 +1,20 @@
+name: cachecheck
+
+on:
+   workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gowridurgad/setup-java-fork@testing-snap
+        with:
+           distribution: 'sapmachine'
+           java-version: '21'
+           cache: 'gradle'
+           cache-dependency-path: | 
+               *.gradle*
+               **/gradle-wrapper.properties
+      - run: ./gradlew build --no-daemon
+         
+     
