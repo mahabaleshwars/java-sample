@@ -1,4 +1,4 @@
-name: gpgtesting
+name: gpgtesting1
 on:
   workflow_dispatch:
 
