@@ -48,4 +48,3 @@
          with:
            name: build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}
            path: build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.zip
- ```
