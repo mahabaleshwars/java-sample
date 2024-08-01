@@ -12,9 +12,6 @@ jobs:
            distribution: 'sapmachine'
            java-version: '21'
            cache: 'gradle'
-           cache-dependency-path: | 
-               *.gradle*
-               **/gradle-wrapper.properties
       - run: ./gradlew build --no-daemon
          
      
