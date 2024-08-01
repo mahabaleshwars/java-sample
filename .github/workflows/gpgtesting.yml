@@ -21,8 +21,6 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "27514EF421FF171C:6:" | gpg --import-ownertrust
-          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --edit-key 27514EF421FF171C trust quit
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
