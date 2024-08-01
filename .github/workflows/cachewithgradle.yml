@@ -1,4 +1,4 @@
-name: cachecheck
+name: cachewithgradle
 
 on:
    workflow_dispatch
