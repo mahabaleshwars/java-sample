@@ -1,0 +1,39 @@
+name: Build and Upload Artifacts
+
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: gowridurgad/setup-java-fork@testing-snap
+        with:
+          distribution: 'sapmachine'
+          java-version: '11'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven
+
+      - name: Build project
+        run: mvn clean compile
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Package project
+        run: mvn package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: target/*.jar
