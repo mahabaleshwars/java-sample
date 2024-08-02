@@ -11,13 +11,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install poetry
-      run: pipx install poetry
+    
 
     - name: Setup python
       uses: priyagupta108/setup-python@fix-windows-extract-archive
       with:
           python-version: '3.6.x - 3.11.x'
 
-    - name: Install dependencies
-      run: poetry install 
+   
