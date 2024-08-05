@@ -11,12 +11,8 @@ jobs:
         java-version: ['11', '21', '17', '22']
     steps:
       - uses: actions/checkout@v4
-      - uses: gowridurgad/setup-java-fork@testing-snap
-        with:
-          distribution: 'sapmachine'
-          java-version: ${{ matrix.java-version }}
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: gowridurgad/setup-java-fork@testing-snap
         with:
           java-version: ${{ matrix.java-version }}
           distribution: 'sapmachine'
