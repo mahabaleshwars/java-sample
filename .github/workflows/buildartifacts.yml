@@ -1,28 +1,57 @@
-name: build artifacts
+name: Build and Package SapMachine
 
 on:
   workflow_dispatch:
   
 jobs:
-  build:
-    runs-on: windows-latest
+  build_sapmachine:
     strategy:
+      fail-fast: false
       matrix:
-        java-version: ['11']
+        version: ['11']
+        platform: ['windows']
+        arch: ['x64']
+    runs-on: ${{ matrix.platform }}
+    env:
+      ARTIFACT_NAME: sapmachine-${{ matrix.version }}-${{ matrix.platform }}-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
-        uses: gowridurgad/setup-java-fork@testing-snap
-        with:
-          java-version: ${{ matrix.java-version }}
-          distribution: 'sapmachine'
-      - name: Build with Maven
-        run: mvn clean package
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Setup Environment on Windows ARM64 Runner
+        if: matrix.platform == 'windows' && matrix.arch == 'arm64'
+        shell: powershell
+        run: |
+            # Install Chocolatey
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+            echo "C:\ProgramData\Chocolatey\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        
+            # Install PowerShell
+            choco install powershell-core -y
+            echo "C:\Program Files\PowerShell\7" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        
+            # Install Git
+            choco install git -y
+            echo "C:\Program Files\Git\cmd" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        
+            # Install 7-Zip
+            choco install 7zip -y
+            echo "C:\ProgramData\chocolatey\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+
+      - name: Build SapMachine ${{ matrix.version }}
+        run: |
+          ./builders/build-sapmachine.sh -Version ${{ matrix.version }} `
+                  -Platform ${{ matrix.platform }} -Architecture ${{ matrix.arch }}
+
       - name: Package artifacts
         run: |
-          Compress-Archive -Path .\target\* -DestinationPath sapmachine-jdk-${{ matrix.java-version }}_windows-x64_bin.zip
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+          zip -r ${RUNNER_TEMP}/sapmachine-${{ matrix.version }}-${{ matrix.platform }}-${{ matrix.arch }}.zip .
+    
+      - name: Publish artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: sapmachine-jdk-${{ matrix.java-version }}_windows-x64_bin
-          path: sapmachine-jdk-${{ matrix.java-version }}_windows-x64_bin.zip
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${RUNNER_TEMP}/sapmachine-${{ matrix.version }}-${{ matrix.platform }}-${{ matrix.arch }}.zip
+          if-no-files-found: error
