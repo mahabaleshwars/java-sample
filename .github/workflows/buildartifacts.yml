@@ -5,7 +5,7 @@ on:
   
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       matrix:
         java-version: ['11', '21', '17', '22']
@@ -19,9 +19,10 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
       - name: Package artifacts
-        run: zip -r my-artifacts-${{ matrix.java-version }}.zip target/
+        run: |
+          zip -r sapmachine-jdk-${{ matrix.java-version }}_windows-x64_bin.zip target/
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: my-artifacts-${{ matrix.java-version }}
-          path: my-artifacts-${{ matrix.java-version }}.zip
+          name: sapmachine-jdk-${{ matrix.java-version }}_windows-x64_bin
+          path: sapmachine-jdk-${{ matrix.java-version }}_windows-x64_bin.zip
