@@ -1,50 +1,31 @@
+name: build artifacts
 
- name: Build and Upload Artifacts
-
- on:
+on:
   workflow_dispatch:
-
- jobs:
-   build:
-     runs-on: ${{ matrix.os }}
-
-     strategy:
-       matrix:
-         os: [ubuntu-latest, macos-latest]
-         java-version: [11, 17, 21]
-
-     steps:
-       - name: Checkout repository
-         uses: actions/checkout@v4
-
-       - name: Set up JDK
-         uses: gowridurgad/setup-java-fork@testing-snap
-         with:
-           distribution: 'adopt'
-           java-version: ${{ matrix.java-version }}
-
-       - name: Cache Maven dependencies
-         uses: actions/cache@v3
-         with:
-           path: ~/.m2/repository
-           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ matrix.java-version }}
-           restore-keys: ${{ runner.os }}-maven
-
-       - name: Build project
-         run: mvn clean compile
-
-       - name: Run tests
-         run: mvn test
-
-       - name: Package project
-         run: mvn package
-
-       - name: Create ZIP archive
-         run: |
-           zip -r build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.zip target/*.jar
-
-       - name: Upload artifact
-         uses: actions/upload-artifact@v4
-         with:
-           name: build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}
-           path: build-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.zip
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: ['11', '21', '17', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gowridurgad/setup-java-fork@testing-snap
+        with:
+          distribution: 'sapmachine'
+          java-version: ${{ matrix.java-version }}
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'sapmachine'
+      - name: Build with Maven
+        run: mvn clean package
+      - name: Package artifacts
+        run: zip -r my-artifacts-${{ matrix.java-version }}.zip target/
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-artifacts-${{ matrix.java-version }}
+          path: my-artifacts-${{ matrix.java-version }}.zip
