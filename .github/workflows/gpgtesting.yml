@@ -1,20 +1,25 @@
-name: gpgtesting1
+name: GraalVM GPG Testing
+
 on:
   workflow_dispatch:
+  
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
       - name: Set up JDK
-        uses: gowridurgad/setup-java-fork@testing-snap
+        uses: graalvm/setup-java@fniephaus/graalvm
         with:
           distribution: 'sapmachine'
           java-version: '21'
           cache: maven
+          
       - name: Install GPG
         run: sudo apt-get install -y gnupg2
+        
       - name: Import GPG key
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
