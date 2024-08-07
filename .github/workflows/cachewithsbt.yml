@@ -1,17 +1,19 @@
-name: cachewithsbt 
+name: GraalVM SBT Cache 
 
 on:
-   workflow_dispatch
+   workflow_dispatch:
+   
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: gowridurgad/setup-java-fork@testing-snap
+      - uses: graalvm/setup-java@fniephaus/graalvm
         with:
-           distribution: 'sapmachine'
+           distribution: 'graalvm'
            java-version: '21'
            cache: 'sbt'
-           cache-dependency-path: build.sbt            
+           cache-dependency-path: build.sbt   
+           
       - name: Build with SBT
         run: sbt package
