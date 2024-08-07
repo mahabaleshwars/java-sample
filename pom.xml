@@ -61,7 +61,7 @@
 		<repository>
 		    <id>github</id>
 		    <name>GitHub OWNER Apache Maven Packages</name>
-		    <url>https://maven.pkg.github.com/gowridurgad/java-sapmachine</url>
+		    <url>https://maven.pkg.github.com/mahabaleshwars/java-sample</url>
 		</repository>
    	 </distributionManagement>
 
