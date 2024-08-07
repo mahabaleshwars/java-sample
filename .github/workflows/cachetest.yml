@@ -1,16 +1,17 @@
 
-name: cachecheck
+name: GraalVM Cache Check
 
 on:
-   workflow_dispatch
+   workflow_dispatch:
+   
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: gowridurgad/setup-java-fork@testing-snap
+      - uses: graalvm/setup-java@fniephaus/graalvm
         with:
-           distribution: 'sapmachine'
+           distribution: 'graalvm'
            java-version: '21'
            cache: 'maven'
            cache-dependency-path: 'pom.xml'
