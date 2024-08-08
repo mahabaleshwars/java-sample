@@ -1,31 +1,21 @@
-name: cachewithsbt
+name: cachewithsbt 
 
 on:
-  workflow_dispatch
-
+   workflow_dispatch
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-12]
-        java-version: [11, 17, 21]
+        java-version: [11, 17, 21 ]
     steps:
       - uses: actions/checkout@v4
-      
       - uses: gowridurgad/setup-java-fork@testing-snap
         with:
-          distribution: 'sapmachine'
-          java-version: ${{ matrix.java-version }}
-          cache: 'sbt'
-
-      - name: Cache SBT packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.sbt
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt', '**/build.properties', '**/plugins.sbt') }}
-          restore-keys: |
-            ${{ runner.os }}-sbt-
+           distribution: 'sapmachine'
+           java-version: ${{ matrix.java-version }}
+           cache: 'sbt'
+           cache-dependency-path: build.sbt            
       - name: Build with SBT
         run: sbt package
