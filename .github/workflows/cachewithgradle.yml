@@ -16,8 +16,5 @@ jobs:
            distribution: 'sapmachine'
            java-version: ${{ matrix.java-version }}
            cache: 'gradle'
-           cache-dependency-path: | 
-               *.gradle*
-               **/gradle-wrapper.properties
       - run: ./gradlew build --no-daemon
          
