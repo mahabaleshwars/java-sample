@@ -25,7 +25,7 @@ jobs:
           curl -L -o sbt.tgz https://github.com/sbt/sbt/releases/download/v1.5.5/sbt-1.5.5.tgz
           tar -xzf sbt.tgz
           sudo mv sbt /usr/local/sbt
-          export PATH=$PATH:/usr/local/sbt/bin
+          echo 'export PATH=$PATH:/usr/local/sbt/bin' >> $GITHUB_ENV
 
       - name: Build with SBT
         run: sbt package
