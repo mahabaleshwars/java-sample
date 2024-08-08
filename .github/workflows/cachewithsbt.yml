@@ -7,11 +7,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [macos-latest]
         java-version: [11, 17, 21 ]
     steps:
       - uses: actions/checkout@v4
-      - uses: gowridurgad/setup-java-fork@testing-snap
+      - uses: actions/setup-java@v4
         with:
            distribution: 'sapmachine'
            java-version: ${{ matrix.java-version }}
