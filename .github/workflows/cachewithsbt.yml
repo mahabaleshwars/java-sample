@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [ubuntu-latest, windows-latest]
         java-version: [11, 17, 21]
     steps:
       - uses: actions/checkout@v4
@@ -18,14 +18,6 @@ jobs:
           distribution: 'sapmachine'
           java-version: ${{ matrix.java-version }}
           cache: 'sbt'
-          
-
-      - name: Install SBT
-        run: |
-          curl -L -o sbt.tgz https://github.com/sbt/sbt/releases/download/v1.5.5/sbt-1.5.5.tgz
-          tar -xzf sbt.tgz
-          sudo mv sbt /usr/local/sbt
-          echo '/usr/local/sbt/bin' >> $GITHUB_PATH
 
       - name: Build with SBT
         run: sbt package
