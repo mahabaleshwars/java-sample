@@ -4,14 +4,15 @@ on:
    workflow_dispatch
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+        java-version: [11, 17, 21 ]
     steps:
       - uses: actions/checkout@v4
       - uses: gowridurgad/setup-java-fork@testing-snap
         with:
            distribution: 'sapmachine'
-           java-version: '21'
+           java-version: ${{ matrix.java-version }}
            architecture: x64
-          
-    
-        
