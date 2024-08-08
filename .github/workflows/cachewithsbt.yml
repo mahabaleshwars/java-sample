@@ -19,5 +19,14 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: 'sbt'
 
+      - name: Cache SBT packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt', '**/build.properties', '**/plugins.sbt') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-
+
       - name: Build with SBT
         run: sbt package
