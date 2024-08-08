@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-14]
-        java-version: [11, 17, 21]
+        java-version: [11]
     steps:
       - uses: actions/checkout@v4
       
@@ -25,7 +25,7 @@ jobs:
           curl -L -o sbt.tgz https://github.com/sbt/sbt/releases/download/v1.5.5/sbt-1.5.5.tgz
           tar -xzf sbt.tgz
           sudo mv sbt /usr/local/sbt
-          echo 'export PATH=$PATH:/usr/local/sbt/bin' >> $GITHUB_ENV
+          echo '/usr/local/sbt/bin' >> $GITHUB_PATH
 
       - name: Build with SBT
         run: sbt package
