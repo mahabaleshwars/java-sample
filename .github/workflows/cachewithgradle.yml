@@ -15,17 +15,9 @@ jobs:
         with:
            distribution: 'sapmachine'
            java-version: ${{ matrix.java-version }}
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-           ${{ runner.os }}-gradle-
-          
+           cache: 'gradle'
+           cache-dependency-path: | 
+               *.gradle*
+               **/gradle-wrapper.properties
       - run: ./gradlew build --no-daemon
          
-     
