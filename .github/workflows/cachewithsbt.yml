@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-12]
+        os: [ubuntu-latest, windows-latest, macos-12]
         java-version: [11, 17, 21]
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +27,5 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt', '**/build.properties', '**/plugins.sbt') }}
           restore-keys: |
             ${{ runner.os }}-sbt-
-
       - name: Build with SBT
         run: sbt package
