@@ -1,4 +1,4 @@
-name: GraalVM Architecture x86
+name: GraalVM Architecture
 
 on:
    workflow_dispatch:
