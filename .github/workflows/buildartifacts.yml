@@ -5,10 +5,11 @@ on:
   
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        java-version: [ '21', '17', '22']
+        java-version: ['17','21','22']
+        os: ['ubuntu-latest','windows-latest','macos-latest']
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK
