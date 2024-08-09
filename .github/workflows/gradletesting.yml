@@ -6,8 +6,12 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        java-version: ['17','21','22']
+        os: ['ubuntu-latest','windows-latest','macos-latest']
+        
     steps:
     - uses: actions/checkout@v4
 
@@ -15,7 +19,7 @@ jobs:
       uses: graalvm/setup-java@fniephaus/graalvm
       with:
         distribution: 'graalvm'
-        java-version: '21'
+        java-version: ${{ matrix.java-version }}
 
     - name: Build with Gradle
       run: gradle build
