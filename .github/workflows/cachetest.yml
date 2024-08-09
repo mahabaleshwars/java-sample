@@ -1,5 +1,5 @@
 
-name: GraalVM Cache Check
+name: GraalVM Maven Cache
 
 on:
    workflow_dispatch:
