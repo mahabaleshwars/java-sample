@@ -5,7 +5,7 @@ on:
    
 jobs:
   build:
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         java-version: ['17','21','22']
@@ -15,7 +15,7 @@ jobs:
       - uses: graalvm/setup-java@fniephaus/graalvm
         with:
            distribution: 'graalvm'
-           java-version: ${{matrix.java-version}}
+           java-version: ${{ matrix.java-version }}
 
       - name: Cache Gradle packages
         uses: actions/cache@v3
