@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [ubuntu-latest, windows-latest]
         java-version: [11, 17, 21]
     steps:
       - name: Checkout repository
@@ -21,7 +21,12 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
 
+      - name: Install GPG (Unix)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y gnupg2
+
       - name: Install GPG (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
           curl -LO https://github.com/git-for-windows/git/releases/download/v2.40.1.windows.1/MinGit-2.40.1-busybox-64-bit.zip
           unzip MinGit-2.40.1-busybox-64-bit.zip -d $HOME\mingit
@@ -32,7 +37,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "$GPG_PRIVATE_KEY" | tr -d '\r' | gpg --batch --import
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
