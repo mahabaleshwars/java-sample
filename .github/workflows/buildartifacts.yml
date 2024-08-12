@@ -5,17 +5,18 @@ on:
   
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        java-version: ['11']
+        os: [ubuntu-latest, windows-latest, macos-12]
+        java-version: ['11', '17', '21']
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: gowridurgad/setup-java-fork@testing-snap
         with:
           java-version: ${{ matrix.java-version }}
-          distribution: 'dragonwell'
+          distribution: 'sapmachine'
       - name: Build with Maven
         run: mvn clean package
       - name: Package artifacts
