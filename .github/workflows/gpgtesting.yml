@@ -18,13 +18,10 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
-    - name: Set up GPG for Signing
-      uses: gowridurgad/setup-java-fork@testing-snap
-      with:
-        distribution: 'sapmachine'
-        java-version: '11'
-        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-        gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }} # env variable for GPG private key passphrase
-
-    - name: Sign Artifacts
-      run: mvn verify -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
+    - name: Sign the artifacts
+      run: |
+        echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+        mvn -B gpg:sign-and-deploy-file -Durl=file:target/ -DrepositoryId=github -DpomFile=pom.xml -Dfile=target/*.jar
+      env:
+        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
