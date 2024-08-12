@@ -2,13 +2,17 @@ name: gaptesting
 
 on:
   workflow_dispatch:
-  
+
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: List files for debugging
+      run: dir
+
     - name: Set up JDK 11
       uses: gowridurgad/setup-java-fork@testing-snap
       with:
@@ -18,10 +22,12 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
-    - name: Sign the artifacts
-      run: |
-        echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-        mvn -B gpg:sign-and-deploy-file -Durl=file:target/ -DrepositoryId=github -DpomFile=pom.xml -Dfile=target/*.jar
+    - name: Import GPG Key
+      run: echo "$GPG_PRIVATE_KEY" | gpg --batch --import
       env:
         GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+    - name: Sign the artifacts
+      run: mvn -B gpg:sign-and-deploy-file -Durl=file:target/ -DrepositoryId=github -DpomFile=pom.xml -Dfile=target/*.jar
+      env:
         GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
