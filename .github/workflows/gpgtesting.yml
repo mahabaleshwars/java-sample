@@ -22,6 +22,11 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
+    - name: Debug GPG Key
+      run: echo "$GPG_PRIVATE_KEY"
+      env:
+        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
     - name: Import GPG Key
       run: echo "$GPG_PRIVATE_KEY" | gpg --batch --import
       env:
