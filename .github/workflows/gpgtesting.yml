@@ -1,32 +1,30 @@
-name: gpgtesting1
+name: gaptesting
+
 on:
   workflow_dispatch:
+  
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up JDK
-        uses: gowridurgad/setup-java-fork@testing-snap
-        with:
-          distribution: 'sapmachine'
-          java-version: '21'
-          cache: maven
-      - name: Install choco
-        run: |
-            # Install Chocolatey
-            Set-ExecutionPolicy Bypass -Scope Process -Force
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-            iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-            echo "C:\ProgramData\Chocolatey\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
-      - name: Install GPG
-        run: choco install gnupg
-      - name: Import GPG key
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
+    - uses: actions/checkout@v4
+    - name: Set up JDK 11
+      uses: gowridurgad/setup-java-fork@testing-snap
+      with:
+        distribution: 'sapmachine'
+        java-version: '11'
+
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+
+    - name: Set up GPG for Signing
+      uses: gowridurgad/setup-java-fork@testing-snap
+      with:
+        distribution: 'sapmachine'
+        java-version: '11'
+        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
+        gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }} # env variable for GPG private key passphrase
+
+    - name: Sign Artifacts
+      run: mvn verify -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
