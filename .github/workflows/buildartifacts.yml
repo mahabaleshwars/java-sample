@@ -2,7 +2,7 @@ name: Build and Package Artifacts
 
 on:
   workflow_dispatch:
-  
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -19,10 +19,15 @@ jobs:
           distribution: 'sapmachine'
       - name: Build with Maven
         run: mvn clean package
-      - name: Package artifacts
+      - name: Package artifacts (Unix)
+        if: matrix.os != 'windows-latest'
         run: tar -czvf my-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.tar.gz target/
+      - name: Package artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Compress-Archive -Path target\* -DestinationPath my-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.zip
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: my-artifacts-${{ matrix.os }}-${{ matrix.java-version }}
-          path: my-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.tar.gz
+          path: my-artifacts-${{ matrix.os }}-${{ matrix.java-version }}.*
