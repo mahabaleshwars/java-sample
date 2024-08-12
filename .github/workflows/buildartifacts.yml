@@ -21,8 +21,8 @@ jobs:
         run: mvn clean package
       - name: Package artifacts
         run: |
-          if [ ${{ runner.os }} == 'Windows' ]; then
-            Compress-Archive -Path target\* -DestinationPath my-artifacts-${{ matrix.java-version }}.zip
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            pwsh -command "Compress-Archive -Path target\* -DestinationPath my-artifacts-${{ matrix.java-version }}.zip"
           else
             tar -czvf my-artifacts-${{ matrix.java-version }}.tar.gz target/
           fi
