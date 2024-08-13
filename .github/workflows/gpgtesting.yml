@@ -1,18 +1,13 @@
-name: gaptesting
-
-on:
+name: Testing
+on: 
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: List files for debugging
-      run: dir
-
     - name: Set up JDK 11
       uses: gowridurgad/setup-java-fork@testing-snap
       with:
@@ -22,17 +17,25 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
-    - name: Debug GPG Key
-      run: echo "$GPG_PRIVATE_KEY"
+    - name: Publish to GitHub Packages Apache Maven
+      run: mvn deploy
       env:
-        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        GITHUB_TOKEN: ${{ github.token }} # GITHUB_TOKEN is the default env for the password
 
-    - name: Import GPG Key
-      run: echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-      env:
-        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+    - name: Set up Apache Maven Central
+      uses: actions/setup-java@v4
+      with: # running setup-java again overwrites the settings.xml
+        distribution: 'temurin'
+        java-version: '11'
+        server-id: maven # Value of the distributionManagement/repository/id field of the pom.xml
+        server-username: MAVEN_USERNAME # env variable for username in deploy
+        server-password: MAVEN_CENTRAL_TOKEN # env variable for token in deploy
+        gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }} # Value of the GPG private key to import
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
 
-    - name: Sign the artifacts
-      run: mvn -B gpg:sign-and-deploy-file -Durl=file:target/ -DrepositoryId=github -DpomFile=pom.xml -Dfile=target/*.jar
+    - name: Publish to Apache Maven Central
+      run: mvn deploy
       env:
-        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        MAVEN_USERNAME: maven_username123
+        MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
