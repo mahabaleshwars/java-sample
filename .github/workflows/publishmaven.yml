@@ -23,7 +23,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }} # GITHUB_TOKEN is the default env for the password
 
     - name: Set up Apache Maven Central
-      uses: actions/setup-java@v4
+      uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
         distribution: 'sapmachine'
         java-version: '11'
