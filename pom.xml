@@ -59,7 +59,7 @@
 	</build>
 	<distributionManagement>
 		<repository>
-		    <id>github</id>
+		    <id>maven</id>
 		    <name>GitHub OWNER Apache Maven Packages</name>
 		    <url>https://maven.pkg.github.com/gowridurgad/java-sapmachine</url>
 		</repository>
