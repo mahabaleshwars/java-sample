@@ -59,7 +59,7 @@
 	</build>
 	<distributionManagement>
 		<repository>
-		    <id>maven</id>
+		    <id>central</id>
 		    <name>Maven Central</name>
 		    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 		</repository>
