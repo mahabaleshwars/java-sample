@@ -1,7 +1,6 @@
 name: Publish Maven package to GPR
 
 on:
- 
   workflow_dispatch:
 
 jobs:
@@ -9,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [windows-latest]
         java-version: [17]
 
     steps:
@@ -17,33 +16,21 @@ jobs:
 
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
-      with: # running setup-java again overwrites the settings.xml
+      with:
         distribution: 'sapmachine'
         java-version: ${{ matrix.java-version }}
-        server-id: central # Value of the distributionManagement/repository/id field of the pom.xml
-        server-username: MAVEN_USERNAME # env variable for username in deploy
-        server-password: MAVEN_CENTRAL_TOKEN # env variable for token in deploy
-        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-        gpg-passphrase: MY_GPG_PASSPHRASE # env variable for GPG private key passphrase
+        server-id: central
+        server-username: MAVEN_USERNAME
+        server-password: MAVEN_CENTRAL_TOKEN
+        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+        gpg-passphrase: ${{ secrets.MY_GPG_PASSPHRASE }}  # Set the passphrase correctly here
 
-    - name: "Check gpg setup"
-      shell: bash
-      run: |
-        gpg --version
-        gpg --list-keys
-        gpg --list-secret-keys
-
-    - name: "Check gpg setup on Linux"
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        which gpg
-        cat /home/runner/.m2/settings.xml
+    - name: Set up GPG Passphrase
+      run: echo "MY_GPG_PASSPHRASE=${{ secrets.MY_GPG_PASSPHRASE }}" >> $GITHUB_ENV
 
 
     - name: Publish to Apache Maven Central
-      run: mvn -P release --batch-mode deploy -DskipTests
+      run: mvn -P release --batch-mode deploy -DskipTests -Dgpg.passphrase=$MY_GPG_PASSPHRASE
       env:
-        MAVEN_USERNAME: +ZArALIw
-        MAVEN_CENTRAL_TOKEN: HiFxjNaL7H9uvVzZ5W+w8ssoG5dAaJgw8D4Av1WzdvGg
-        MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
+        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+        MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
