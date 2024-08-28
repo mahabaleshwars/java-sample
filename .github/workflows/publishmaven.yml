@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         java-version: [17]
 
     steps:
@@ -23,11 +23,10 @@ jobs:
         server-username: MAVEN_USERNAME
         server-password: MAVEN_CENTRAL_TOKEN
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-        gpg-passphrase: ${{ secrets.MY_GPG_PASSPHRASE }}  # Set the passphrase correctly here
+        gpg-passphrase: ${{ secrets.MY_GPG_PASSPHRASE }}
 
     - name: Set up GPG Passphrase
       run: echo "MY_GPG_PASSPHRASE=${{ secrets.MY_GPG_PASSPHRASE }}" >> $GITHUB_ENV
-
 
     - name: Publish to Apache Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests -Dgpg.passphrase=$MY_GPG_PASSPHRASE
