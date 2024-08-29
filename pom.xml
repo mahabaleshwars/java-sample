@@ -140,10 +140,11 @@
 						<configuration>
 							
 							<gpgArguments>
-								<passphraseEnvName>MY_GPG_PASSPHRASE</passphraseEnvName>
+			
 								<arg>--pinentry-mode</arg>
 								<arg>loopback</arg>
 							</gpgArguments>
+							<passphraseEnvName>MY_GPG_PASSPHRASE</passphraseEnvName>
 						</configuration>
 					</plugin>
     
