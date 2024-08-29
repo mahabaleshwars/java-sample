@@ -138,8 +138,9 @@
 							</execution>
 						</executions>
 						<configuration>
-							<passphraseEnvName>MY_GPG_PASSPHRASE</passphraseEnvName>
+							
 							<gpgArguments>
+								<passphraseEnvName>MY_GPG_PASSPHRASE</passphraseEnvName>
 								<arg>--pinentry-mode</arg>
 								<arg>loopback</arg>
 							</gpgArguments>
