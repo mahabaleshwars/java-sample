@@ -24,23 +24,17 @@ jobs:
         server-username: MAVEN_USERNAME # env variable for username in deploy
         server-password: MAVEN_CENTRAL_TOKEN # env variable for token in deploy
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
-        gpg-passphrase: MY_GPG_PASSPHRASE # env variable for GPG private key passphrase
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
 
-    - name: "Check gpg setup"
-      shell: bash
-      run: |
-        gpg --version
-        gpg --list-keys
-        gpg --list-secret-keys
-    - name: "Check gpg setup on Linux"
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        which gpg
-        cat /home/runner/.m2/settings.xml
+    
+    - name: "Print MAVEN_GPG_PASSPHRASE"
+      run: echo $MAVEN_GPG_PASSPHRASE
+      env:
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
     - name: Publish to Apache Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests
       env:
         MAVEN_USERNAME: +ZArALIw
         MAVEN_CENTRAL_TOKEN: HiFxjNaL7H9uvVzZ5W+w8ssoG5dAaJgw8D4Av1WzdvGg
-        MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
