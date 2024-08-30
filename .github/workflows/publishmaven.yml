@@ -28,7 +28,7 @@ jobs:
 
     
     - name: "Print MAVEN_GPG_PASSPHRASE"
-      run: echo $MAVEN_GPG_PASSPHRASE
+      run: echo ${ MAVEN_GPG_PASSPHRASE }
       env:
         MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
