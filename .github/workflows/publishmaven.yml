@@ -15,6 +15,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install PowerShell 5.1
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y powershell=5.1.0-1
+
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
