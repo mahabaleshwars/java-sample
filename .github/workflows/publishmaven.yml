@@ -17,10 +17,10 @@ jobs:
 
     - name: Verify settings-security.xml exists
       run: |
-        if [ ! -f "$HOME/.m2/settings-security.xml" ]; then
+       if (-not (Test-Path "$HOME/.m2/settings-security.xml")) {
           echo "settings-security.xml does not exist."
           exit 1
-        fi
+       }
 
     - name: Encrypt Maven passphrase
       id: encrypt-passphrase
