@@ -25,7 +25,7 @@ jobs:
     - name: Encrypt Maven passphrase
       id: encrypt-passphrase
       run: |
-        ENCRYPTED_PASSPHRASE=$(mvn --encrypt-password "$MY_GPG_PASSPHRASE")
+        ENCRYPTED_PASSPHRASE=$(mvn --encrypt-password "${{ secrets.MY_GPG_PASSPHRASE }}")
         echo "::set-output name=encrypted-passphrase::$ENCRYPTED_PASSPHRASE"
 
     
