@@ -16,17 +16,10 @@ jobs:
     - uses: actions/checkout@v4
 
     
-    - name: Downgrade to PowerShell 5.1 on Windows
-      if: runner.os == 'Windows'
-      run: |
-          Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/releases/download/v6.0.1/PowerShell-6.0.1-win-x64.msi -OutFile PowerShell-5.1.14409.1005-win-x64.msi
-          msiexec.exe /i PowerShell-5.1.14409.1005-win-x64.msi /quiet /norestart
-          pwsh -version
-
     - name: Set GPG Passphrase Environment Variable
       shell: pwsh
       run: |
-        [Environment]::SetEnvironmentVariable('MY_GPG_PASSPHRASE', '${{ secrets.MY_GPG_PASSPHRASE }}', 'users')
+        [Environment]::SetEnvironmentVariable('MY_GPG_PASSPHRASE', '${{ secrets.MY_GPG_PASSPHRASE }}', 'User')
         Write-Output "Environment variable MY_GPG_PASSPHRASE set in User scope. Please start a new PowerShell session to reflect changes."
 
     - name: Restart PowerShell Session
@@ -46,14 +39,7 @@ jobs:
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: ${{ secrets.MY_GPG_PASSPHRASE }} # env variable for GPG private key passphrase
 
-    
-    - name: Use Secret in PowerShell
-      run: |
-              $gpgPassphrase = $env:MY_GPG_PASSPHRASE
-               Write-Host "The GPG passphrase is: $gpgPassphrase"
-      shell: pwsh
-      env:
-          MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
+   
 
     - name: Publish to Apache Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests
