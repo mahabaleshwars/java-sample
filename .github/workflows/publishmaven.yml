@@ -23,6 +23,18 @@ jobs:
           msiexec.exe /i PowerShell-5.1.14409.1005-win-x64.msi /quiet /norestart
           pwsh -version
 
+    - name: Set GPG Passphrase Environment Variable
+      shell: pwsh
+      run: |
+        [Environment]::SetEnvironmentVariable('MY_GPG_PASSPHRASE', '${{ secrets.MY_GPG_PASSPHRASE }}', 'users')
+        Write-Output "Environment variable MY_GPG_PASSPHRASE set in User scope. Please start a new PowerShell session to reflect changes."
+
+    - name: Restart PowerShell Session
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'echo New session started; pause'"
+
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
@@ -34,13 +46,7 @@ jobs:
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: ${{ secrets.MY_GPG_PASSPHRASE }} # env variable for GPG private key passphrase
 
-    - name: "Check gpg setup on Windows"
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        Get-Command gpg
-        Get-Content $env:\Users\runneradmin\.m2\settings.xml
-
+    
     - name: Use Secret in PowerShell
       run: |
               $gpgPassphrase = $env:MY_GPG_PASSPHRASE
