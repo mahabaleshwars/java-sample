@@ -34,13 +34,12 @@ jobs:
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: ${{ secrets.MY_GPG_PASSPHRASE }} # env variable for GPG private key passphrase
 
-    - name: "Check gpg setup on Linux"
+    - name: "Check gpg setup on Windows"
       if: runner.os == 'Windows'
-      shell: bash
+      shell: pwsh
       run: |
-        which gpg
-        cat /home/runner/.m2/settings.xml
-
+        Get-Command gpg
+        Get-Content $env:\Users\runneradmin\.m2\settings.xml
 
     - name: Use Secret in PowerShell
       run: |
