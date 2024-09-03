@@ -15,19 +15,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Verify settings-security.xml exists
+      run: |
+        if [ ! -f "$HOME/.m2/settings-security.xml" ]; then
+          echo "settings-security.xml does not exist."
+          exit 1
+        fi
+
+    - name: Encrypt Maven passphrase
+      id: encrypt-passphrase
+      run: |
+        ENCRYPTED_PASSPHRASE=$(mvn --encrypt-password "$MY_GPG_PASSPHRASE")
+        echo "::set-output name=encrypted-passphrase::$ENCRYPTED_PASSPHRASE"
+
     
-    - name: Set GPG Passphrase Environment Variable
-      shell: pwsh
-      run: |
-        [Environment]::SetEnvironmentVariable('MY_GPG_PASSPHRASE', '${{ secrets.MY_GPG_PASSPHRASE }}', 'User')
-        Write-Output "Environment variable MY_GPG_PASSPHRASE set in User scope. Please start a new PowerShell session to reflect changes."
-
-    - name: Restart PowerShell Session
-      if: runner.os == 'Windows'
-      shell: cmd
-      run: |
-        powershell -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', 'echo New session started; pause'"
-
+    
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
