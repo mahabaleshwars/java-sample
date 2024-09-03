@@ -19,7 +19,7 @@ jobs:
     - name: Downgrade to PowerShell 5.1 on Windows
       if: runner.os == 'Windows'
       run: |
-          Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/releases/download/v5.1.14409.1005/PowerShell-5.1.14409.1005-win-x64.msi -OutFile PowerShell-5.1.14409.1005-win-x64.msi
+          Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/releases/download/v6.0.1/PowerShell-6.0.1-win-x64.msi -OutFile PowerShell-5.1.14409.1005-win-x64.msi
           msiexec.exe /i PowerShell-5.1.14409.1005-win-x64.msi /quiet /norestart
           pwsh -version
 
