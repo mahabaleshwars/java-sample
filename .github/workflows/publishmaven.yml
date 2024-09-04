@@ -6,7 +6,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-latest]
         java-version: [17]
     env:
       passphraseenvname: ${{ secrets.MY_GPG_PASSPHRASE }}
