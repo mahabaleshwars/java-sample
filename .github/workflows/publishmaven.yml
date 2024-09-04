@@ -1,9 +1,6 @@
 name: Publish Maven package to GPR
-
 on:
- 
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -13,11 +10,8 @@ jobs:
         java-version: [17]
     env:
       passphraseenvname: ${{ secrets.MY_GPG_PASSPHRASE }}
-
     steps:
     - uses: actions/checkout@v4
-    
-    
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
@@ -28,9 +22,14 @@ jobs:
         server-password: MAVEN_CENTRAL_TOKEN # env variable for token in deploy
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: MY_GPG_PASSPHRASE # env variable for GPG private key passphrase
-
-   
-
+    - name: Debug Passphrase on Windows
+      if: runner.os == 'Windows'
+      run: |
+        echo "Passphrase from environment variable: $passphraseenvname"
+        echo "Passphrase from secret: ${{ secrets.MY_GPG_PASSPHRASE }}"
+        $passphrase = "${{ secrets.MY_GPG_PASSPHRASE }}"
+        Write-Host "Parsed Passphrase: $passphrase"
+        gpg --batch --pinentry-mode loopback --passphrase "$passphrase" --import ${{ secrets.GPG_PRIVATE_KEY }}
     - name: Publish to Apache Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests
       env:
