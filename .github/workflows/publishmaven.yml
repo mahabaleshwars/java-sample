@@ -22,7 +22,7 @@ jobs:
         gpg-passphrase: MY_GPG_PASSPHRASE # env variable for GPG private key passphrase
     - name: Set MAVEN_GPG_PASSPHRASE on Windows
       if: runner.os == 'Windows'
-      run: echo MAVEN_GPG_PASSPHRASE=${{ secrets.MY_GPG_PASSPHRASE }} >> $GITHUB_ENV
+      run: echo MY_GPG_PASSPHRASE=${{ secrets.MY_GPG_PASSPHRASE }} >> $GITHUB_ENV
     - name: Publish to Apache Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests
       env:
