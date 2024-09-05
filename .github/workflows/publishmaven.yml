@@ -24,8 +24,21 @@ jobs:
       if: runner.os == 'Windows'
       run: echo MY_GPG_PASSPHRASE=${{ secrets.MY_GPG_PASSPHRASE }} >> $GITHUB_ENV
     - name: Publish to Apache Maven Central
-      run: mvn -P release --batch-mode deploy -DskipTests
+      run: |
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          echo "Setting GPG_TTY for Windows"
+          export GPG_TTY=$(tty)
+        fi
+        mvn -P release --batch-mode deploy -DskipTests
       env:
         MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
         MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
         MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
+
+
+
+
+
+
+
+
