@@ -6,9 +6,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest]
         java-version: [17]
-   
     steps:
     - uses: actions/checkout@v4
     - name: Set up Apache Maven Central
@@ -21,9 +20,9 @@ jobs:
         server-password: MAVEN_CENTRAL_TOKEN # env variable for token in deploy
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: MY_GPG_PASSPHRASE # env variable for GPG private key passphrase
-
-
-        
+    - name: Set MAVEN_GPG_PASSPHRASE on Windows
+      if: runner.os == 'Windows'
+      run: echo MAVEN_GPG_PASSPHRASE=${{ secrets.MY_GPG_PASSPHRASE }} >> $GITHUB_ENV
     - name: Publish to Apache Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests
       env:
