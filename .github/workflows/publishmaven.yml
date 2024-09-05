@@ -6,15 +6,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, ]
         java-version: [17]
+   
     steps:
     - uses: actions/checkout@v4
-
-    - name: Set PowerShell Execution Policy
-      run: Set-ExecutionPolicy AllSigned -Scope Process -Force
-      shell: pwsh
-        
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
@@ -25,18 +21,18 @@ jobs:
         server-password: MAVEN_CENTRAL_TOKEN # env variable for token in deploy
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: MY_GPG_PASSPHRASE # env variable for GPG private key passphrase
-    - name: Set MAVEN_GPG_PASSPHRASE on Windows
-      if: runner.os == 'Windows'
-      run: echo MY_GPG_PASSPHRASE=${{ secrets.MY_GPG_PASSPHRASE }} >> $GITHUB_ENV
-    - name: Publish to Apache Maven Central
+
+
+        
+    - name: Import GPG Key
       run: |
-       if ($env:RUNNER_OS -eq "Windows") {
-          Write-Output "Setting GPG_TTY for Windows"
-          $env:GPG_TTY = $(tty)
-        }
-        mvn -B -X -ntp deploy
-    
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
       env:
-        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-        MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
-        MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
+          GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+    - name: Publish to Maven Central
+      run: mvn -P release --batch-mode deploy -DskipTests
+      env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
