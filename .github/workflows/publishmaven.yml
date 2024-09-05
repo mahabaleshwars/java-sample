@@ -25,9 +25,15 @@ jobs:
 
 
         
-    - name: Publish to Apache Maven Central
+    - name: Import GPG Key
+      run: |
+          echo "${{ secrets.MY_GPG_PRIVATE_KEY }}" | gpg --batch --import
+      env:
+          GPG_KEY: ${{ secrets.MY_GPG_PRIVATE_KEY }}
+
+    - name: Publish to Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests
       env:
-        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-        MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
-        MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
