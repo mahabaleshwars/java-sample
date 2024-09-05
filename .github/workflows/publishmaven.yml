@@ -1,42 +1,34 @@
 name: Publish Maven package to GPR
+
 on:
+ 
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ]
+        os: [windows-latest]
         java-version: [17]
 
-    env:
-        MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
-   
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
         distribution: 'sapmachine'
         java-version: ${{ matrix.java-version }}
-          
         server-id: central # Value of the distributionManagement/repository/id field of the pom.xml
         server-username: MAVEN_USERNAME # env variable for username in deploy
         server-password: MAVEN_CENTRAL_TOKEN # env variable for token in deploy
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }} # Value of the GPG private key to import
         gpg-passphrase: MY_GPG_PASSPHRASE # env variable for GPG private key passphrase
 
-
-        
-    - name: Import GPG Key
-      run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-      env:
-          gpg-private-key : ${{ secrets.GPG_PRIVATE_KEY }}
-
-    - name: Publish to Maven Central
+    - name: Publish to Apache Maven Central
       run: mvn -P release --batch-mode deploy -DskipTests
       env:
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
-          MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
+        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+        MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+        MY_GPG_PASSPHRASE: ${{ secrets.MY_GPG_PASSPHRASE }}
