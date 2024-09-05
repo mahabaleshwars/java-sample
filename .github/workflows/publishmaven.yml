@@ -34,7 +34,8 @@ jobs:
           Write-Output "Setting GPG_TTY for Windows"
           $env:GPG_TTY = $(tty)
         }
-        mvn -P release --batch-mode deploy -DskipTests
+        mvn -B -X -ntp verify
+    
       env:
         MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
         MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
