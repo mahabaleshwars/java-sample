@@ -10,6 +10,11 @@ jobs:
         java-version: [17]
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set PowerShell Execution Policy
+      run: Set-ExecutionPolicy AllSigned -Scope Process -Force
+      shell: pwsh
+        
     - name: Set up Apache Maven Central
       uses: gowridurgad/setup-java-fork@testing-snap
       with: # running setup-java again overwrites the settings.xml
