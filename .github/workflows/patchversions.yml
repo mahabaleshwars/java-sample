@@ -11,9 +11,9 @@ jobs:
         java-version: ['11', '21', '17', '22']
     steps:
       - uses: actions/checkout@v4
-      - uses: gowridurgad/setup-java-fork@testing-snap
+      - uses: aparnajyothi-y/setup-java@basic-validation-failure-fix
         with:
           distribution: 'sapmachine'
           java-version: ${{ matrix.java-version }}
-          
+         
  
