@@ -137,11 +137,7 @@
 								</goals>
 							</execution>
 						</executions>
-						<configuration>
-						       <passphraseEnvName>MY_GPG_PASSPHRASE</passphraseEnvName> 
-				
-							
-						</configuration>
+					
 					</plugin>
     
 				</plugins>
