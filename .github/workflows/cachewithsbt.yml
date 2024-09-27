@@ -39,6 +39,12 @@ jobs:
         with:
             distribution: ${{ matrix.distribution }}
             java-version: ${{ matrix.version }}
-            cache: 'sbt'          
+            cache: 'sbt'    
+      - name: Install SBT
+        run: |
+          echo "Installing SBT"
+          curl -L https://www.scala-sbt.org/sbt-rpm.repo > sbt-rpm.repo
+          sudo mv sbt-rpm.repo /etc/yum.repos.d/
+          sudo yum install sbt
       - name: Build with SBT
         run: sbt package
