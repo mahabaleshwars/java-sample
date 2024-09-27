@@ -1,18 +1,42 @@
-name: witharchkeyword
+name: Maven Check against Ubuntu
 
 on:
-   workflow_dispatch
+  workflow_dispatch:
+
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-14, windows-latest]
-        java-version: [11, 17, 21 ]
+        distribution: [microsoft, oracle, temurin, corretto, liberica, dragonwell, sapmachine]
+        version: [8, 11, 17 ,21, 22]
+        exclude:
+          - distribution: microsoft
+            version: 8
+          - distribution: microsoft
+            version: 22  
+          - distribution: oracle
+            version: 8
+          - distribution: oracle
+            version: 11
+          - distribution: graalvm
+            version: 8
+          - distribution: graalvm
+            version: 11
+          - distribution: sapmachine
+            version: 8
+          - distribution: temurin
+            version: 8
+          - distribution: temurin
+            version: 22
+          - distribution: dragonwell
+            version: 22
     steps:
-      - uses: actions/checkout@v4
-      - uses: gowridurgad/setup-java-fork@testing-snap
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-           distribution: 'sapmachine'
-           java-version: ${{ matrix.java-version }}
-           architecture: x64
+            distribution: ${{ matrix.distribution }}
+            java-version: ${{ matrix.version }}
+            architecture: x64
