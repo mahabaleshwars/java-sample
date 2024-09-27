@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.gowridurgad</groupId>
-	<artifactId>java-sapmachine</artifactId>
+	<artifactId>java-sample</artifactId>
 	<version>1.2.5</version>
 	<packaging>jar</packaging>
 
@@ -46,6 +46,12 @@
 	      <scope>test</scope>
 	    </dependency>
 	</dependencies>
+	<distributionManagement>
+	    <repository>
+<!-- 	        <id>your-repo-id</id>
+	        <url>https://github.com/mahabaleshwars/java-sample</url> -->
+	    </repository>
+	</distributionManagement>
 	<build>
 		<plugins>
 			<plugin>
