@@ -9,12 +9,12 @@
 
 	<name>setup-test-java</name>
 	<description>Sample</description>
-	<url>https://github.com/gowridurgad/java-sapmachine</url>
+	<url>https://github.com/mahabaleshwars/java-sample</url>
 
 	<developers>
 		<developer>
-			<name>gowridurgad</name>
-			<email>gowridurgad@github.com</email>
+			<name>mahabaleshwars</name>
+			<email>mahabaleshwars@github.com</email>
 		</developer>
 	</developers>
 
@@ -27,9 +27,9 @@
 	</licenses>
 
 	<scm>
-		<url>https://github.com/gowridurgad/java-sapmachine</url>
-		<connection>scm:git:https://github.com/gowridurgad/java-sapmachine.git</connection>
-		<developerConnection>scm:git:https://github.com/gowridurgad/java-sapmachine.git</developerConnection>
+		<url>https://github.com/mahabaleshwars/java-sample</url>
+		<connection>scm:git:https://github.com/mahabaleshwars/java-sample.git</connection>
+		<developerConnection>scm:git:https://github.com/mahabaleshwars/java-sample.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
 
@@ -38,17 +38,14 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
-
-	
-	
 	<dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+	    <dependency>
+	      <groupId>junit</groupId>
+	      <artifactId>junit</artifactId>
+	      <version>3.8.1</version>
+	      <scope>test</scope>
+	    </dependency>
+	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
