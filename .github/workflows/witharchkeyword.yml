@@ -1,4 +1,4 @@
-name: Maven Check against Ubuntu
+name: Arch Keyword Check against Ubuntu
 
 on:
   workflow_dispatch:
