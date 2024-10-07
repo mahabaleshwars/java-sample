@@ -1,0 +1,31 @@
+name: JetBrains Maven Publish to Github
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-13, macos-latest]
+        version: [11, 17 ,21]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: gmitch215/setup-java@main
+        with:
+            distribution: jetbrains
+            java-version: ${{ matrix.version }}
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Publish to GitHub Packages
+        run: mvn deploy
+        env:
+              GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+   
+     
