@@ -1,4 +1,4 @@
-name: Check Latest against Ubuntu
+name: JetBrains Get Latest Check
 
 on:
   workflow_dispatch:
