@@ -19,5 +19,4 @@ jobs:
         with:
             distribution: jetbrains
             java-version: 11
-            # # ${{ matrix.version }}
-            # check-latest: true
+
