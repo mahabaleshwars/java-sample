@@ -18,5 +18,6 @@ jobs:
         uses: gmitch215/setup-java@main
         with:
             distribution: jetbrains
-            java-version: ${{ matrix.version }}
+            java-version: 11
+            # ${{ matrix.version }}
             check-latest: true
