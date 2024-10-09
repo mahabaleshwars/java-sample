@@ -1,0 +1,16 @@
+name: 689 PR Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  PR-689-Test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/chekout@v4
+      - name: Setup Java
+        uses: priyagupta108/setup-java@fix-windows-archive-extraction
+        with:
+            distribution: microsoft
+            jdk: 17
