@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        distribtution: [microsoft, oracle, zulu, temurin, dragonwell, zulu, corretto, adopt, sapmachine, graalvm, semeru, liberica,adopt-openj9]
+        distribution: [microsoft, oracle, zulu, temurin, dragonwell, zulu, corretto, adopt, sapmachine, graalvm, semeru, liberica,adopt-openj9]
         jdk: [17,21]
     steps:
       - name: Checkout
