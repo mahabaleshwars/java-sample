@@ -23,3 +23,5 @@ jobs:
             java-version: ${{ matrix.version }}
             check-latest: true
             architecture: ${{ matrix.arch }}
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
