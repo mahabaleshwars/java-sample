@@ -6,11 +6,16 @@ on:
 jobs:
   PR-689-Test:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix: 
+        distribtution: [microsoft, oracle, zulu, temurin, dragonwell, zulu, corretto, adopt, sapmachine, graalvm, semeru, liberica,adopt-openj9]
+        jdk: [17,21]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
         uses: priyagupta108/setup-java@fix-windows-archive-extraction
         with:
-            distribution: microsoft
-            java-version: 17
+            distribution: ${{ matrix.distribution }}
+            java-version: ${{ matrix.jdk }}
