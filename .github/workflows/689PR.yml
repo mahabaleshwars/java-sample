@@ -13,4 +13,4 @@ jobs:
         uses: priyagupta108/setup-java@fix-windows-archive-extraction
         with:
             distribution: microsoft
-            jdk: 17
+            java-version: 17
