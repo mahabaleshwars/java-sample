@@ -13,5 +13,5 @@ jobs:
         uses: mahabaleshwars/setup-java@architecture/arm64-aarch64-error-fix
         with: 
           distribution: zulu
-          java-verions: 17
+          java-verion: 17
           architecture: arm64
