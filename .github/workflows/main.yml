@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: setup java
-        uses: mahabaleshwars/setup-java@architecture/arm64-aarch64-error-fix
+        uses: mahabaleshwars/setup-java@fix/architecture-variable
         with: 
           distribution: zulu
           java-version: 17
