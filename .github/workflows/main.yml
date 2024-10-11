@@ -1,0 +1,16 @@
+name: JAVA_HOME Path Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: setup java
+        uses: mahabaleshwars/setup-java@architecture/arm64-aarch64-error-fix
+        with: 
+          distribution: zulu
+          architecture: arm64
