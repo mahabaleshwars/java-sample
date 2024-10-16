@@ -9,8 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-13, macos-latest]
-        version: [11, 17 ,21]
+        os: [ubuntu-latest]
+        version: [21.0.4-b631.2, 21.0.4-b509.26, 21.0.2-b346.3]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
