@@ -14,7 +14,7 @@ jobs:
       - name: Setup Java 
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: ${{ matrix.distribution }}
           java-version: '8'
       
       # - name: Check Runner ToolCache
@@ -27,5 +27,5 @@ jobs:
       - name: Setup Java Again
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution:  ${{ matrix.distribution }}
           java-version: '8'
