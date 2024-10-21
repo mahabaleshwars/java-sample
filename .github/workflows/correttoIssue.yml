@@ -16,6 +16,8 @@ jobs:
         run: |
           ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
             # ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
+      - name: Print Tool Cache Path
+        run: echo $RUNNER_TOOL_CACHE
 
       - name: Setup Java Again
         uses: actions/setup-java@v4
