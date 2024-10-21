@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Setup Java 
-        uses: actions/setup-java@v4
+        uses: mahabaleshwars/setup-java@fix/corretto
         with:
           distribution: ${{ matrix.distribution }}
-          java-version: '8'
+          java-version: '17'
       
       - name: List Java JDK Directories
         run: |
@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Setup Java Again
-        uses: actions/setup-java@v4
+        uses: mahabaleshwars/setup-java@fix/corretto
         with:
           distribution:  ${{ matrix.distribution }}
           java-version: '8'
