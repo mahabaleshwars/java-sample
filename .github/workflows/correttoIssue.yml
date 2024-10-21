@@ -9,8 +9,8 @@ jobs:
       - name: Setup Java 
         uses: actions/setup-java@v4
         with:
-          distribution: 'corretto'
-          java-version: '8'
+          distribution: 'microsoft'
+          java-version: '17'
       
       - name: Check Runner ToolCache
         run: |
@@ -19,5 +19,5 @@ jobs:
       - name: Setup Java Again
         uses: actions/setup-java@v4
         with:
-          distribution: 'corretto'
-          java-version: '8'
+          distribution: 'microsoft'
+          java-version: '17'
