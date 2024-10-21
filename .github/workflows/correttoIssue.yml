@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 jobs:
   playground:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -17,44 +17,44 @@ jobs:
           distribution: ${{ matrix.distribution }}
           java-version: '8'
       
-      # - name: List Java JDK Directories
-      #   run: |
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Corretto_jdk/" ]; then
-      #       echo "Contents of Java_Corretto_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Microsoft_jdk/" ]; then
-      #       echo "Contents of Java_Microsoft_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Zulu_jdk/" ]; then
-      #       echo "Contents of Java_Zulu_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Zulu_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Temurin_jdk/" ]; then
-      #       echo "Contents of Java_Temurin_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Temurin_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Adopt_jdk/" ]; then
-      #       echo "Contents of Java_Adopt_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Adopt_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Liberica_jdk/" ]; then
-      #       echo "Contents of Java_Liberica_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Liberica_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_SapMachine_jdk/" ]; then
-      #       echo "Contents of Java_SapMachine_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_SapMachine_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Dragonwell_jdk/" ]; then
-      #       echo "Contents of Java_Dragonwell_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Dragonwell_jdk/
-      #     fi
-      #     if [ -d "$RUNNER_TOOL_CACHE/Java_Semuru_jdk/" ]; then
-      #       echo "Contents of Java_Semuru_jdk:"
-      #       ls -la $RUNNER_TOOL_CACHE/Java_Semuru_jdk/
-      #     fi
+      - name: List Java JDK Directories
+        run: |
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Corretto_jdk/" ]; then
+            echo "Contents of Java_Corretto_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Microsoft_jdk/" ]; then
+            echo "Contents of Java_Microsoft_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Zulu_jdk/" ]; then
+            echo "Contents of Java_Zulu_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Zulu_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Temurin_jdk/" ]; then
+            echo "Contents of Java_Temurin_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Temurin_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Adopt_jdk/" ]; then
+            echo "Contents of Java_Adopt_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Adopt_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Liberica_jdk/" ]; then
+            echo "Contents of Java_Liberica_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Liberica_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_SapMachine_jdk/" ]; then
+            echo "Contents of Java_SapMachine_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_SapMachine_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Dragonwell_jdk/" ]; then
+            echo "Contents of Java_Dragonwell_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Dragonwell_jdk/
+          fi
+          if [ -d "$RUNNER_TOOL_CACHE/Java_Semuru_jdk/" ]; then
+            echo "Contents of Java_Semuru_jdk:"
+            ls -la $RUNNER_TOOL_CACHE/Java_Semuru_jdk/
+          fi
 
       - name: Setup Java Again
         uses: actions/setup-java@v4
