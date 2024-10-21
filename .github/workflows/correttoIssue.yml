@@ -10,7 +10,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'microsoft'
-          java-version: '17'
+          java-version: '17.0.10'
       
       - name: Check Runner ToolCache
         run: |
@@ -21,4 +21,4 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'microsoft'
-          java-version: '17'
+          java-version: '17.0.10'
