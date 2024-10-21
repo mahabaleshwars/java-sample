@@ -14,7 +14,8 @@ jobs:
       
       - name: Check Runner ToolCache
         run: |
-          ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
+          # ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
+            ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
 
       - name: Setup Java Again
         uses: actions/setup-java@v4
