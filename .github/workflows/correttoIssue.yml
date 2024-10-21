@@ -9,16 +9,16 @@ jobs:
       - name: Setup Java 
         uses: actions/setup-java@v4
         with:
-          distribution: 'microsoft'
+          distribution: 'corretto'
           java-version: '17.0.10'
       
       - name: Check Runner ToolCache
         run: |
-          # ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
-            ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
+            # ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
 
       - name: Setup Java Again
         uses: actions/setup-java@v4
         with:
-          distribution: 'microsoft'
+          distribution: 'corretto'
           java-version: '17.0.10'
