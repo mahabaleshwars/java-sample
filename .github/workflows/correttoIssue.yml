@@ -15,7 +15,7 @@ jobs:
         uses: mahabaleshwars/setup-java@fix/corretto
         with:
           distribution: ${{ matrix.distribution }}
-          java-version: '8.342.07.4'
+          java-version: '8.342.07'
       
       - name: List Java JDK Directories
         run: |
@@ -60,4 +60,4 @@ jobs:
         uses: mahabaleshwars/setup-java@fix/corretto
         with:
           distribution:  ${{ matrix.distribution }}
-          java-version: '8.342.07.4'
+          java-version: '8.342.07'
