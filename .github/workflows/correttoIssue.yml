@@ -5,19 +5,33 @@ on:
 jobs:
   playground:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: [microsoft, zulu ,temurin, corretto, adopt, liberica, sapmachine, dragonwell, semuru]
+
     steps:
       - name: Setup Java 
         uses: actions/setup-java@v4
         with:
-          distribution: 'corretto'
+          distribution: ${{ matrix.distribution }}
           java-version: '8'
       
-      - name: Check Runner ToolCache
+      - name: List Java Versions in Tool Cache
         run: |
+          echo "Listing Java versions in tool cache:"
           ls -la $RUNNER_TOOL_CACHE/Java_Corretto_jdk/
-            # ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Microsoft_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Zulu_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Temurin_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Adopt_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Liberica_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_SapMachine_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Dragonwell_jdk/
+          ls -la $RUNNER_TOOL_CACHE/Java_Semuru_jdk/
+
       - name: Setup Java Again
         uses: actions/setup-java@v4
         with:
-          distribution: 'corretto'
+          distribution:  ${{ matrix.distribution }}
           java-version: '8'
