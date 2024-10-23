@@ -55,7 +55,10 @@ jobs:
             echo "Contents of Java_Semuru_jdk:"
             ls -la $RUNNER_TOOL_CACHE/Java_Semuru_jdk/
           fi
-
+      - name: Print directory contents
+        run: node print-directory.js
+        env:
+          RUNNER_TOOL_CACHE: ${{ runner.tool_cache }}
       - name: Setup Java Again
         uses: mahabaleshwars/setup-java@fix/corretto
         with:
