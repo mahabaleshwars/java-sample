@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Setup Java 
-        uses: mahabaleshwars/setup-java@fix/corretto-test-branch
+        uses: mahabaleshwars/setup-java@fix/corretto
         with:
           distribution: ${{ matrix.distribution }}
           java-version: '8'
@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Setup Java Again
-        uses: mahabaleshwars/setup-java@fix/corretto-test-branch
+        uses: mahabaleshwars/setup-java@fix/corretto
         with:
           distribution:  ${{ matrix.distribution }}
           java-version: '8'
