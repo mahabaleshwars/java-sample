@@ -16,7 +16,7 @@ jobs:
         with:
           # distribution: ${{ matrix.distribution }}
           distribution: corretto
-          java-version: '8'
+          java-version: '8.362.10.1'
       
       # - name: List Java JDK Directories
       #   run: |
@@ -67,4 +67,4 @@ jobs:
         with:
           distribution: corretto
           # distribution:  ${{ matrix.distribution }}
-          java-version: '8'
+          java-version: '8.362.10.1'
