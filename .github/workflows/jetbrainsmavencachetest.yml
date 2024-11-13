@@ -19,6 +19,8 @@ jobs:
         with:
             distribution: jetbrains
             java-version: ${{ matrix.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Maven packages
         uses: actions/cache@v3
