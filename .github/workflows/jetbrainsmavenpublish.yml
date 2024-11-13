@@ -19,6 +19,8 @@ jobs:
         with:
             distribution: jetbrains
             java-version: ${{ matrix.version }}
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
