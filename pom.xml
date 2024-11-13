@@ -38,6 +38,12 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
+	<distributionManagement>
+	    <repository>
+	        <id>releases</id>
+	        <url>https://github.com/mahabaleshwars/java-sample</url>
+	    </repository>
+	</distributionManagement>
 	<dependencies>
 	    <dependency>
 	      <groupId>junit</groupId>
