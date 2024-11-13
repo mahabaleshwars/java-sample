@@ -29,5 +29,6 @@ jobs:
         run: mvn deploy
         env:
               GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+              GH_PAT: ${{ secrets.GH_PAT }}
    
      
