@@ -20,5 +20,7 @@ jobs:
             distribution: jetbrains
             java-version: ${{ matrix.version }}
             cache: 'gradle'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: ./gradlew build --no-daemon
          
