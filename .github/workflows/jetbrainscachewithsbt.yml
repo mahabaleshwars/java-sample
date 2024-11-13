@@ -20,5 +20,7 @@ jobs:
             distribution: jetbrains
             java-version: ${{ matrix.version }}
             cache: 'sbt'    
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build with SBT
         run: sbt package
