@@ -22,5 +22,9 @@ jobs:
             cache: 'sbt'    
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install SBT on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install sbt
       - name: Build with SBT
         run: sbt package
