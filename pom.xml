@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.mahabaleshwars</groupId>
 	<artifactId>java-sample</artifactId>
-	<version>1.2.8</version>
+	<version>1.3.0</version>
 	<packaging>jar</packaging>
 
 	<name>setup-test-java</name>
@@ -38,12 +38,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
-	<distributionManagement>
-	    <repository>
-	        <id>releases</id>
-	        <url>https://maven.pkg.github.com/mahabaleshwars/java-sample</url>
-	    </repository>
-	</distributionManagement>
 	<dependencies>
 	    <dependency>
 	      <groupId>junit</groupId>
