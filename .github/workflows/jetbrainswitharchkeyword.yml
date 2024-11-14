@@ -17,9 +17,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
-        uses: gmitch215/setup-java@main
+        uses: actions/setup-java@main
         with:
-            distribution: jetbrains
+            distribution: microsoft
             java-version: ${{ matrix.version }}
             check-latest: true
             architecture: ${{ matrix.arch }}
