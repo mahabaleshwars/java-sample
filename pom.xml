@@ -135,7 +135,7 @@
 							</execution>
 						</executions>
 						 <configuration>
-				                    <gpgPassphrase>${env.GPG_PASSPHRASE}</gpgPassphrase>
+				                    <gpgPassphrase>${env.MY_GPG_PASSPHRASE}</gpgPassphrase>
 				                </configuration>
 					</plugin>
 				</plugins>
