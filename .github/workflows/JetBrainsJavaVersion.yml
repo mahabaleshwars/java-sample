@@ -1,0 +1,24 @@
+name: JetBrains .java-version file check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-latest, macos-13]
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: gmitch215/setup-java@main
+        with:
+            distribution: jetbrains
+            java-version-file: .java-version
+            check-latest: true
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
