@@ -134,9 +134,10 @@
 								</goals>
 							</execution>
 						</executions>
-					
+						 <configuration>
+				                    <gpgPassphrase>${env.GPG_PASSPHRASE}</gpgPassphrase>
+				                </configuration>
 					</plugin>
-    
 				</plugins>
 			</build>
 		</profile>
