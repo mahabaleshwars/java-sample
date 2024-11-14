@@ -1,0 +1,24 @@
+name: JetBrains Minor Versions check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-latest, macos-13]
+        versions: [21.0.5, 21.0.4 ,21.0.2]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: gmitch215/setup-java@main
+        with:
+            distribution: jetbrains
+            java-version: ${{ matrix.versions}}
+            check-latest: true
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
