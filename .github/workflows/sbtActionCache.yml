@@ -1,0 +1,41 @@
+name: JetBrains SBT Action Cache Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-latest]
+        version: [11, 17, 21]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: gmitch215/setup-java@main
+        with:
+          distribution: jetbrains
+          java-version: ${{ matrix.version }}
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache SBT packages
+        if: matrix.build-system == 'sbt'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt', '**/build.properties', '**/plugins.sbt') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-
+           
+      - name: Build with SBT
+        run: sbt package
+
+      - name: Verify Java version
+        run: java -version
