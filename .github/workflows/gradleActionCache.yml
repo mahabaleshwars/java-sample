@@ -1,0 +1,45 @@
+
+
+name: JetBrains Gradle Action Cache Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-latest]
+        version: [11, 17, 21]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: gmitch215/setup-java@main
+        with:
+          distribution: jetbrains
+          java-version: ${{ matrix.version }}
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Gradle packages
+        if: matrix.build-system == 'gradle'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+           ${{ runner.os }}-gradle-
+           
+      - name: Build with Gradle
+        if: matrix.build-system == 'gradle'
+        run: ./gradlew build --no-daemon
+
+      - name: Verify Java version
+        run: java -version
