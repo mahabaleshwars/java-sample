@@ -1,0 +1,34 @@
+name: JetBrains Maven Cache Check with Dependencies 
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        version: [11, 17, 21]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: gmitch215/setup-java@main
+        with:
+          distribution: jetbrains
+          java-version: ${{ matrix.version }}
+          cache: maven
+          cache-dependency-path: 'pom.xml'
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml 
+
+      - name: Verify Java version
+        run: java -version
+         
