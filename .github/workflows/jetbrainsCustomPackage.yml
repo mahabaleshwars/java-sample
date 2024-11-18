@@ -1,0 +1,25 @@
+name: JetBrains Custom Package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-13, macos-latest]
+        version: [11, 17 ,21]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: gmitch215/setup-java@main
+        with:
+            distribution: jetbrains
+            java-version: ${{ matrix.version }}
+            check-latest: true
+            java-package: jdk
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
