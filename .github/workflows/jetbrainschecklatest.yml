@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        version: [21.0.5-b631.16]
+        version: [21.0.5-b631.16, 17.0.5-b653.6, 17.0.5-b469.67]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
