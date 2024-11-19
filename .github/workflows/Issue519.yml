@@ -1,0 +1,21 @@
+
+name: issue519
+
+on:
+   workflow_dispatch
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v3
+        with:
+           distribution: 'adopt'
+           java-version: '22.0.1+8'
+           check-latest: false
+           cache: 'gradle'
+           
+      - run: ./gradlew build --no-daemon
