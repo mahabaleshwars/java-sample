@@ -15,7 +15,7 @@ jobs:
         with:
            distribution: 'adopt'
            java-version: '22.0.1+8'
-           check-latest: false
+           check-latest: true
            cache: 'gradle'
            
       - run: ./gradlew build --no-daemon
