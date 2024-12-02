@@ -11,6 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-latest, macos-13]
         version: [11, 17, 21]
+        package: [jdk, jre, jdk+jcef, jre+jcef, jdk+ft, jre+ft]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,6 +20,6 @@ jobs:
         with:
             distribution: jetbrains
             java-version: ${{ matrix.version }}
-            check-latest: true
+            java-package: ${{ matrix.package }}
         env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
