@@ -33,6 +33,10 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt', '**/build.properties', '**/plugins.sbt') }}
           restore-keys: |
             ${{ runner.os }}-sbt-
+            
+      - name: Install SBT
+        if: matrix.os =='macos-latest'
+        run: brew install sbt
            
       - name: Build with SBT
         run: sbt package
