@@ -1,3 +1,4 @@
+
 name: JetBrains Minor Versions check
 
 on:
@@ -10,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-24.04, windows-latest, macos-latest, macos-13]
-        versions: [ 11.0.11+9]
+        versions: [11_0_16, 11_0_14, 11_0_13, 11_0_11]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
