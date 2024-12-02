@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
-        uses: gmitch215/setup-java@main
+        uses: mahabaleshwars/setup-java-main-2@main
         with:
             distribution: jetbrains
             java-version: ${{ matrix.versions}}
