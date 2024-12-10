@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
-        uses: actions/setup-java@main
+        uses: gmitch215/setup-java@main
         with:
             distribution: microsoft
             java-version: ${{ matrix.version }}
