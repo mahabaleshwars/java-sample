@@ -7,3 +7,5 @@ scalaVersion := "2.13.8"
 libraryDependencies += "org.scala-lang" % "scala-library" % "2.13.8"
 
 coverageEnabled := true
+
+resolvers += Resolver.sonatypeRepo("releases")
