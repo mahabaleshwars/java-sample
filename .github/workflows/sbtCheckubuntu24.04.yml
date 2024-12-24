@@ -27,3 +27,11 @@ jobs:
           sudo chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg
           sudo apt-get update
           sudo apt-get install sbt
+    - name: Run tests and create coverage report
+      run: sbt clean coverage test assembly coverageReport
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: scoverage-report
+        path: target/scala-*/scoverage-report/
