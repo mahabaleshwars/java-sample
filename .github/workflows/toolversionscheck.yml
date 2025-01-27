@@ -7,6 +7,7 @@ jobs:
   build:
     runs-on: ubunutu-latest
     strategy:
+      fail-fast: false
       matrix:
         distribution: [microsoft, zulu, oracle, temurin, semuru, liberica, corretto, drangonwell,]
     steps:
