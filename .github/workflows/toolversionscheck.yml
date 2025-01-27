@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distribution: [microsoft, zulu, oracle, temurin, semuru, liberica, corretto, drangonwell,]
+        distribution: [microsoft, zulu, oracle, temurin, semuru, liberica, corretto, drangonwell]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
