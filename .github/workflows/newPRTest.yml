@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup JAva
-        uses: actions/setup-java@dependabot/npm_and_yarn/actions/http-client-2.2.3
+        uses: actions/setup-java@dependabot/github_actions/actions/publish-immutable-action-0.0.4
         with:
           java-version: 17
           distribution: microsoft
