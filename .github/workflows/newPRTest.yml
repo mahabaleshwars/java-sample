@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup JAva
-        uses: actions/setup-java@DependabotSetup
+        uses: actions/setup-java@dependabot/npm_and_yarn/undici-5.28.5
         with:
           java-version: 17
           distribution: microsoft
