@@ -8,8 +8,10 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - uses: "actions/checkout@v4"
-    - run: ". .github/workflows/tools.sh"
+    - name: Set up Java version
+      run: |
+          source .github/workflows/tools.sh  # Load the tools.sh script
     - uses: "actions/setup-java@v4"
       with:
         distribution: "corretto"
-        java-version: "$JAVA_VERSION"
+        java-version: "${{ env.JAVA_VERSION }}"
