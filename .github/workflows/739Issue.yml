@@ -8,9 +8,8 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - uses: "actions/checkout@v4"
-    - run: "cat .github/workflows/tools.txt >> \"$GITHUB_OUTPUT\""
-      id: "tools"
+    - run: ". .github/workflows/tools.sh"
     - uses: "actions/setup-java@v4"
       with:
         distribution: "corretto"
-        java-version: "${{ steps.tools.outputs.JAVA_VERSION }}"
+        java-version: "$JAVA_VERSION"
