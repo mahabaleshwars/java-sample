@@ -2,23 +2,22 @@ name: "739 Issue"
 
 on: 
   workflow_dispatch:
-  
+
 jobs:
   Build:
     runs-on: "ubuntu-24.04"
     steps:
-    - uses: "actions/checkout@v4"
-    - name: Set up Java version
-      run: |
-        . .github/workflows/tools.sh  # Load the tools.sh script
-      # echo "JAVA_VERSION=$JAVA_VERSION" >> $GITHUB_ENV
-    - uses: "actions/setup-java@v4"
-      with:
-        distribution: "corretto"
-        java-version: "$JAVA_VERSION"
+      # Step 1: Checkout the code
+      - uses: "actions/checkout@v4"
 
+      # Step 2: Set up Java version by sourcing tools.sh and exporting JAVA_VERSION
+      - name: Set up Java version
+        run: |
+          source .github/workflows/tools.sh  # Source tools.sh to set JAVA_VERSION
+          echo "JAVA_VERSION=$JAVA_VERSION" >> $GITHUB_ENV  # Export JAVA_VERSION to $GITHUB_ENV
 
-    # - name: Set up Java version
-    #   run: |
-    #     source .github/workflows/tools.sh  # Load the tools.sh script
-    #     echo "JAVA_VERSION=$JAVA_VERSION" >> $GITHUB_ENV  # Export JAVA_VERSION to the environment
+      # Step 3: Set up Java using the exported JAVA_VERSION
+      - uses: "actions/setup-java@v4"
+        with:
+          distribution: "corretto"
+          java-version: "${{ env.JAVA_VERSION }}"  # Use the JAVA_VERSION from $GITHUB_ENV
