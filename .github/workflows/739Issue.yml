@@ -11,11 +11,11 @@ jobs:
     - name: Set up Java version
       run: |
         . .github/workflows/tools.sh  # Load the tools.sh script
-        # echo "JAVA_VERSION=$JAVA_VERSION" >> $GITHUB_ENV
+      # echo "JAVA_VERSION=$JAVA_VERSION" >> $GITHUB_ENV
     - uses: "actions/setup-java@v4"
       with:
         distribution: "corretto"
-        java-version: ${{JAVA_VERSION}}
+        java-version: $JAVA_VERSION
 
 
     # - name: Set up Java version
