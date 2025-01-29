@@ -9,7 +9,7 @@ jobs:
     steps:
     - uses: "actions/checkout@v4"
     - name: Set up Java version
-      run: ".github/workflows/tools.sh"  # Load the tools.sh script
+      run: ". .github/workflows/tools.sh"  # Load the tools.sh script
     - uses: "actions/setup-java@v4"
       with:
         distribution: "corretto"
