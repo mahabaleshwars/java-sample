@@ -15,7 +15,7 @@ jobs:
     - uses: "actions/setup-java@v4"
       with:
         distribution: "corretto"
-        java-version: $JAVA_VERSION
+        java-version: "$JAVA_VERSION"
 
 
     # - name: Set up Java version
