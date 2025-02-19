@@ -17,11 +17,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: gmitch215/setup-java@main
+        uses: actions/setup-java@v4
         with:
           distribution: jetbrains
           java-version: ${{ matrix.version }}
-          cache: maven
+          cache: gradle
           cache-dependency-path: |
             *.gradle*
             **/gradle-wrapper.properties
