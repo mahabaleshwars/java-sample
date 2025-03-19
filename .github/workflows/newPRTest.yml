@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup JAva
-        uses: actions/setup-java@update-graalvm-doc
+        uses: aparnajyothi-y/setup-java@upgrade-actions-cache-4.0.2
         with:
           java-version: 17
           distribution: microsoft
