@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup JAva
-        uses: actions/setup-java@dependabot/npm_and_yarn/actions/glob-0.5.0
+        uses: actions/setup-java@dependabot/npm_and_yarn/ts-jest-29.2.5
         with:
           java-version: 17
           distribution: microsoft
