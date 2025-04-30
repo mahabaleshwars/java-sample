@@ -1,0 +1,15 @@
+name: Tool-version new regex
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubnuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java usng tool-versions
+        uses: mahabaleshwars/setup-java@fix/tool-versions-test
+        with:
+          java-version-file: .tool-versions
