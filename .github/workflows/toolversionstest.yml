@@ -10,8 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java usng tool-versions
-        uses: actions/setup-java@v4
-        # mahabaleshwars/setup-java@fix/tool-versions-test
+        uses: mahabaleshwars/setup-java@fix/tool-versions-test
         with:
-          distribution: adoptopenjdk
+          distribution: liberica
           java-version-file: .tool-versions
