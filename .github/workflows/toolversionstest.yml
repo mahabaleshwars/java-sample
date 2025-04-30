@@ -12,5 +12,5 @@ jobs:
       - name: Setup Java usng tool-versions
         uses: mahabaleshwars/setup-java@fix/tool-versions-test
         with:
-          distribution: adoptopenjdk
+          distribution: corretto
           java-version-file: .tool-versions
