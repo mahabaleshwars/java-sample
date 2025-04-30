@@ -10,7 +10,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java usng tool-versions
-        uses: mahabaleshwars/setup-java@fix/tool-versions-test
+        uses: actions/setup-java@v4
+        # mahabaleshwars/setup-java@fix/tool-versions-test
         with:
           distribution: microsoft
           java-version-file: .tool-versions
