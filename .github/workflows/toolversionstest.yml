@@ -10,7 +10,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java usng tool-versions
-        uses: aparnajyothi-y/setup-java@toolversions-regex-update
+        uses: actions/setup-java@main
+        # aparnajyothi-y/setup-java@toolversions-regex-update
         with:
           distribution: liberica
           java-version-file: .tool-versions
