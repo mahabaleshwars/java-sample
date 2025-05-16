@@ -12,5 +12,7 @@ jobs:
       - name: Setup JAva
         uses: actions/setup-java@v4
         with:
-          java-version-file: .tool-versions
+          java-version: 21
+          distribution: microsoft
+          check-latest: true
          
