@@ -1,1 +1,4 @@
-java liberica-11.0.27+9
+java liberica-8u282+8
+java kona-8.0.12.b1
+java semeru-openj9-11.0.15+10_openj9-0.32.0
+java zulu-jre-javafx-11.45.27
