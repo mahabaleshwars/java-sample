@@ -13,5 +13,5 @@ jobs:
         uses: aparnajyothi-y/setup-java@tool-versions-regex-fix
         with:
           java-version-file: .tool-versions
-          distribution: liberica
+          distribution: semuru
          
