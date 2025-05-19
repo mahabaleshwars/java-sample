@@ -1,6 +1,4 @@
-java temurin-jre-21.0.0+35.0.LTS
-java temurin-11.0.15+10
-java temurin-jre-11.0.15+10
+
 java temurin-19.0.0-beta+36.0.202208190932
 java temurin-jre-19.0.0-beta+36.0.202208190932
 java zulu-8.52.0.23
