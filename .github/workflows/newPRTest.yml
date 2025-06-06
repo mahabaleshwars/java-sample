@@ -6,6 +6,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [17,21,22,23,24]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -13,5 +16,5 @@ jobs:
         uses: mahabaleshwars/setup-java@fix/graalvm-api-rate-limit
         with:
           distribution: graalvm
-          java-version: 21
+          java-version: ${{ matrix.version }}
          
