@@ -10,8 +10,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
-        uses: aparnajyothi-y/setup-java@tool-versions-regex-fix
+        uses: mahabaleshwars/setup-java@fix/graalvm-api-rate-limit
         with:
-          java-version-file: .tool-versions
-          distribution: jetbrains
+          distribution: graalvm
+          version: 21
          
