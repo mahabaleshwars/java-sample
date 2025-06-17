@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
-        uses: mahabaleshwars/setup-java@fix/graalvm-api-rate-limit
+        uses: gowridurgad/setup-java@errorhandling
         with:
           distribution: graalvm
           java-version: ${{ matrix.version }}
