@@ -6,16 +6,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-        fail-fast: false
-        matrix:
-          version: [17.0.12,21,22,23,24]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
-        uses: gowridurgad/setup-java@errorhandling
+        uses: mahabaleshwars/setup-java@debug/graalvm-api-rate-limit
         with:
-          distribution: graalvm
-          java-version: ${{ matrix.version }}
+          distribution: microsoft
+          java-version: 17
+          token: ${{ secrets.GITHUB_TOKEN }} 
          
