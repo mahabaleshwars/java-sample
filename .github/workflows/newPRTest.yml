@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java
-        uses: actions/setup-java@730
+        uses: actions/setup-java@dependabot/npm_and_yarn/eslint-plugin-jest-28.11.0
         with:
           distribution: ${{ matrix.os }}
           java-version: ${{ matrix.version }}
