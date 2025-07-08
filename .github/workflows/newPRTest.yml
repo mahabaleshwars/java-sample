@@ -9,8 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [microsoft,zulu,oracle]
-        version: [17,21]
+        os: [temurin, adopt, liberica, adopt-openj9, corretto, zulu, microsoft, semeru, oracle, dragonwell, sapmachine, jetbrains, graalvm]
+        version: [21]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
