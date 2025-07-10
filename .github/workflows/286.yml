@@ -13,7 +13,7 @@ jobs:
         run: echo "::add-matcher::.github/java-problem-matcher.json"
 
       - name : Setup Java
-        uses: mahabaleshwars/setup-java@feature/problem-matcher
+        uses: actions/setup-java@main
         with:
           distribution: microsoft
           java-version: 8
