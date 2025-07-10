@@ -1,0 +1,22 @@
+name: 286 error
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java problem matcher
+        run: echo "::add-matcher::.github/java-problem-matcher.json"
+
+      - name : Setup Java
+        uses: mahabaleshwars/setup-java@feature/problem-matcher
+        with:
+          distribution: microsoft
+          java-version: 8
+
+      - name: Build with Maven
+        run: mvn compile
