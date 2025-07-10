@@ -1,22 +1,18 @@
-name: 286 error
+name: Test Java Problem Matcher
 
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java problem matcher
+      - name: Register Java problem matcher
         run: echo "::add-matcher::.github/java-problem-matcher.json"
 
-      - name : Setup Java
-        uses: actions/setup-java@main
-        with:
-          distribution: microsoft
-          java-version: 8
-
-      - name: Build with Maven
-        run: mvn compile
+      - name: Simulate Java compiler output
+        run: |
+          echo "/home/runner/work/user/repo/src/Test.java:203: warning: [dep-ann] deprecated item is not annotated with @Deprecated"
+          echo "/home/runner/work/user/repo/src/Test.java:563: error: cannot find symbol"
