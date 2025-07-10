@@ -9,8 +9,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Register Java problem matcher
-        run: echo "::add-matcher::.github/java-problem-matcher.json"
+      # - name: Register Java problem matcher
+      #   run: echo "::add-matcher::.github/java-problem-matcher.json"
 
       - name: Simulate Java compiler output
         run: |
