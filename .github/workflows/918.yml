@@ -23,82 +23,11 @@ jobs:
           echo "Created .tool-versions file with comments:"
           cat .tool-versions
 
-      - name: Setup Java (this should fail due to comments)
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version-file: '.tool-versions'
-
-      - name: Check Java version (won't reach here)
-        run: java -version
-
-  test-without-comments:
-    name: Test .tool-versions without comments (should work)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Create .tool-versions file without comments
-        run: |
-          cat > .tool-versions << 'EOF'
-          java temurin-17
-          EOF
-          echo "Created .tool-versions file without comments:"
-          cat .tool-versions
-
-      - name: Setup Java (this should work)
+      - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version-file: '.tool-versions'
 
       - name: Check Java version
-        run: java -version
-
-  test-all-platforms:
-    name: Test on ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
-    continue-on-error: true
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Create .tool-versions file with various comment styles
-        run: |
-          cat > .tool-versions << 'EOF'
-          # SPDX-FileCopyrightText: NONE
-          # SPDX-License-Identifier: CC0-1.0
-          # This is a comment line
-          
-          java temurin-17
-          # Another comment after the java line
-          EOF
-          echo "Created .tool-versions file:"
-          cat .tool-versions
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version-file: '.tool-versions'
-
-  test-java-file:
-    name: Tool-versions file
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version-file: '.tool-version'
-      - name: Check Java version if successful
-        if: success()
         run: java -version
