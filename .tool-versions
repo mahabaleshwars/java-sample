@@ -1,1 +1,4 @@
- java jetbrains-jre-11.0.16b2043.64
+# SPDX-FileCopyrightText: NONE
+# SPDX-License-Identifier: CC0-1.0
+
+java temurin-17
