@@ -97,7 +97,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          java-version-file: '.tool-versions'
+          distribution: temurin
+          java-version-file: '.tool-version'
       - name: Check Java version if successful
         if: success()
         run: java -version
