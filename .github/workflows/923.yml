@@ -1,0 +1,32 @@
+name: Java Cache and Setup Example
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Cache Java Installation
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.tool_cache }}/Java_Corretto_jdk/25*
+            ~/hostedtoolcache/Java_Corretto_jdk/25*
+          key: ${{ runner.os }}-java-corretto-25-${{ hashFiles('.github/workflows/*.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-java-corretto-25-
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'corretto'
+          java-version: '25'
+
+      # Example build step
+      - name: Run a sample Java command
+        run: java -version
