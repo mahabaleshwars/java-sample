@@ -1,0 +1,102 @@
+name: Test Microsoft JDK 25
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  test-microsoft-jdk-25:
+    name: Test Microsoft JDK 25 - ${{ matrix.os }} - ${{ matrix.architecture }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+        architecture: [x64, aarch64]
+        exclude:
+          # Exclude x64 from macos-latest (M1 runners)
+          - os: macos-latest
+            architecture: x64
+          # Exclude aarch64 from macos-13 (Intel runners)
+          - os: macos-13
+            architecture: aarch64
+          # Ubuntu and Windows runners don't support aarch64 architecture natively
+          - os: ubuntu-latest
+            architecture: aarch64
+          - os: windows-latest
+            architecture: aarch64
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Microsoft JDK 25
+        uses: the-mod/setup-java@patch-1
+        with:
+          distribution: 'microsoft'
+          java-version: '25'
+          architecture: ${{ matrix.architecture }}
+      
+      - name: Verify distribution
+        run: java -XshowSettings:properties -version 2>&1 | grep -i microsoft || java -version 2>&1 | grep -i microsoft
+        shell: bash
+
+  test-version-ranges:
+    name: Test version ranges - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+        version: ['25.x', '25.0.x', '25.0.0']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Microsoft JDK with version ${{ matrix.version }}
+        uses: the-mod/setup-java@patch-1
+        with:
+          distribution: 'microsoft'
+          java-version: ${{ matrix.version }}
+      
+      - name: Verify Java version
+        run: java -version
+
+  test-download-urls:
+    name: Verify download URLs - ${{ matrix.platform }}-${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos
+            arch: x64
+            url: https://aka.ms/download-jdk/microsoft-jdk-25.0.0-macos-x64.tar.gz
+          - platform: linux
+            arch: x64
+            url: https://aka.ms/download-jdk/microsoft-jdk-25.0.0-linux-x64.tar.gz
+          - platform: windows
+            arch: x64
+            url: https://aka.ms/download-jdk/microsoft-jdk-25.0.0-windows-x64.zip
+          - platform: macos
+            arch: aarch64
+            url: https://aka.ms/download-jdk/microsoft-jdk-25.0.0-macos-aarch64.tar.gz
+          - platform: linux
+            arch: aarch64
+            url: https://aka.ms/download-jdk/microsoft-jdk-25.0.0-linux-aarch64.tar.gz
+          - platform: windows
+            arch: aarch64
+            url: https://aka.ms/download-jdk/microsoft-jdk-25.0.0-windows-aarch64.zip
+    
+    steps:
+      - name: Check if download URL is accessible
+        run: |
+          HTTP_STATUS=$(curl -L -o /dev/null -s -w "%{http_code}" "${{ matrix.url }}")
+          echo "HTTP Status for ${{ matrix.platform }}-${{ matrix.arch }}: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 302 ]; then
+            echo "❌ Download URL is not accessible: ${{ matrix.url }}"
+            exit 1
+          else
+            echo "✅ Download URL is accessible"
+          fi
