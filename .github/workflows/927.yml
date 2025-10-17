@@ -34,7 +34,7 @@ jobs:
         uses: the-mod/setup-java@patch-1
         with:
           distribution: 'microsoft'
-          java-version: '25'
+          java-version: '21'
           architecture: ${{ matrix.architecture }}
       
       - name: Verify distribution
