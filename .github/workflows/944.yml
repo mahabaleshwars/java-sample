@@ -16,4 +16,4 @@ jobs:
         with:
           distribution: microsoft
           java-version: 21
-          check-latest: true
+          check-latest: false
