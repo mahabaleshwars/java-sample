@@ -1,0 +1,18 @@
+name: 944 error
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java 17 (Oracle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: oracle
+          java-version: 17
