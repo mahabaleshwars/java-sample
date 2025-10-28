@@ -16,3 +16,4 @@ jobs:
         with:
           distribution: oracle
           java-version: 21
+          check-latest: true
