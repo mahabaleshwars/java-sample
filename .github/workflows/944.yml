@@ -15,5 +15,5 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: oracle
-          java-version: 17.0.2
+          java-version: 17.0.16
           check-latest: true
