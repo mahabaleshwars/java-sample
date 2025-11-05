@@ -1,0 +1,129 @@
+name: Test SDKMAN - Microsoft Build of OpenJDK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-microsoft-basic:
+    name: Microsoft ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version:
+          - '25.0.1-ms'
+          - '25-ms'
+          - '21.0.9-ms'
+          - '21.0.8-ms'
+          - '17.0.17-ms'
+          - '17.0.16-ms'
+          - '11.0.29-ms'
+          - '11.0.28-ms'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create .sdkmanrc file
+        run: |
+          echo "java=${{ matrix.version }}" > .sdkmanrc
+          cat .sdkmanrc
+        shell: bash
+      
+      - name: Setup Java with SDKMAN
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'microsoft'
+          java-version-file: '.sdkmanrc'
+      
+      - name: Verify Java installation
+        run: |
+          java -version
+          javac -version
+          echo "JAVA_HOME=$JAVA_HOME"
+        shell: bash
+          
+      - name: Test Java functionality (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cat > Test.java << 'EOF'
+          public class Test {
+              public static void main(String[] args) {
+                  System.out.println("✓ Java Version: " + System.getProperty("java.version"));
+                  System.out.println("✓ Vendor: " + System.getProperty("java.vendor"));
+              }
+          }
+          EOF
+          javac Test.java
+          java Test
+        shell: bash
+        
+      - name: Test Java functionality (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          @'
+          public class Test {
+              public static void main(String[] args) {
+                  System.out.println("✓ Java Version: " + System.getProperty("java.version"));
+                  System.out.println("✓ Vendor: " + System.getProperty("java.vendor"));
+              }
+          }
+          '@ | Out-File -FilePath Test.java -Encoding UTF8
+          javac Test.java
+          java Test
+        shell: pwsh
+
+  test-microsoft-cache:
+    name: Microsoft ${{ matrix.cache }} cache - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        cache: [maven, gradle, sbt]
+        version: ['21.0.9-ms']
+        exclude:
+          - os: ubuntu-latest
+            cache: sbt
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create .sdkmanrc and build files (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          echo "java=${{ matrix.version }}" > .sdkmanrc
+          if [ "${{ matrix.cache }}" = "maven" ]; then
+            echo '<project><modelVersion>4.0.0</modelVersion><groupId>test</groupId><artifactId>test</artifactId><version>1.0</version></project>' > pom.xml
+          elif [ "${{ matrix.cache }}" = "gradle" ]; then
+            echo 'plugins { id "java" }' > build.gradle
+            echo 'rootProject.name = "test"' > settings.gradle
+          elif [ "${{ matrix.cache }}" = "sbt" ]; then
+            echo 'name := "test"' > build.sbt
+            mkdir -p project
+            echo 'sbt.version=1.9.7' > project/build.properties
+          fi
+        shell: bash
+        
+      - name: Create .sdkmanrc and build files (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          "java=${{ matrix.version }}" | Out-File -FilePath .sdkmanrc -Encoding UTF8
+          if ("${{ matrix.cache }}" -eq "maven") {
+            '<project><modelVersion>4.0.0</modelVersion><groupId>test</groupId><artifactId>test</artifactId><version>1.0</version></project>' | Out-File -FilePath pom.xml -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "gradle") {
+            'plugins { id "java" }' | Out-File -FilePath build.gradle -Encoding UTF8
+            'rootProject.name = "test"' | Out-File -FilePath settings.gradle -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "sbt") {
+            'name := "test"' | Out-File -FilePath build.sbt -Encoding UTF8
+            New-Item -ItemType Directory -Force -Path project | Out-Null
+            'sbt.version=1.9.7' | Out-File -FilePath project/build.properties -Encoding UTF8
+          }
+        shell: pwsh
+        
+      - name: Setup Java with cache
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'microsoft'
+          java-version-file: '.sdkmanrc'
+          cache: ${{ matrix.cache }}
