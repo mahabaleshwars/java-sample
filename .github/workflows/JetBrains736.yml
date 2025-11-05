@@ -29,7 +29,7 @@ jobs:
       - name: Setup Java with SDKMAN
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
-          distribution: 'jbr'
+          distribution: 'jetbrains'
           java-version-file: '.sdkmanrc'
       
       - name: Verify Java installation
@@ -168,7 +168,7 @@ jobs:
       - name: Setup Java with cache
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
-          distribution: 'jbr'
+          distribution: 'jetbrains'
           java-version-file: '.sdkmanrc'
           cache: ${{ matrix.cache }}
           
@@ -212,7 +212,7 @@ jobs:
       - name: Setup with invalid version
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
-          distribution: 'jbr'
+          distribution: 'jetbrains'
           java-version-file: '.sdkmanrc'
         continue-on-error: true
         id: setup-invalid
