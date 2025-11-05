@@ -1,0 +1,33 @@
+name: Test SDKMAN - SapMachine
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-sapmachine-basic:
+    name: SapMachine ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version:
+          - '24.0.2-sapmchn'
+          - '23.0.2-sapmchn'
+          - '21.0.9-sapmchn'
+          - '21.0.8-sapmchn'
+          - '17.0.17-sapmchn'
+          - '17.0.16-sapmchn'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=${{ matrix.version }}" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'sapmachine'
+          java-version-file: '.sdkmanrc'
+      - name: Verify
+        run: java -version
+        shell: bash
