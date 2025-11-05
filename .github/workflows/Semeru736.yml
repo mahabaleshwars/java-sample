@@ -1,0 +1,40 @@
+name: Test SDKMAN - IBM Semeru
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-semeru-basic:
+    name: Semeru ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version:
+          - '25.0.1-sem'
+          - '25-sem'
+          - '24.0.2-sem'
+          - '23.0.2-sem'
+          - '22.0.2-sem'
+          - '21.0.9-sem'
+          - '21.0.8-sem'
+          - '17.0.17-sem'
+          - '17.0.16-sem'
+          - '11.0.29-sem'
+          - '11.0.28-sem'
+          - '8.0.472-sem'
+          - '8.0.462-sem'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=${{ matrix.version }}" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'semeru'
+          java-version-file: '.sdkmanrc'
+      - name: Verify
+        run: java -version
+        shell: bash
