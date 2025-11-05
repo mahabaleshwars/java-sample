@@ -1,0 +1,35 @@
+name: Test SDKMAN - Oracle JDK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-oracle-basic:
+    name: Oracle ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version:
+          - '25.0.1-oracle'
+          - '25-oracle'
+          - '24.0.2-oracle'
+          - '23.0.2-oracle'
+          - '22.0.2-oracle'
+          - '21.0.9-oracle'
+          - '21.0.8-oracle'
+          - '17.0.12-oracle'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=${{ matrix.version }}" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'oracle'
+          java-version-file: '.sdkmanrc'
+      - name: Verify
+        run: java -version
+        shell: bash
