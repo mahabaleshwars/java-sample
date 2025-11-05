@@ -1,0 +1,52 @@
+name: Test SDKMAN - Azul Zulu
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-zulu-basic:
+    name: Zulu ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version:
+          - '25.fx-zulu'
+          - '25.0.1.fx-zulu'
+          - '25.0.1-zulu'
+          - '25-zulu'
+          - '24.0.2.fx-zulu'
+          - '24.0.2-zulu'
+          - '23.0.2.fx-zulu'
+          - '23.0.2-zulu'
+          - '21.0.9.fx-zulu'
+          - '21.0.9-zulu'
+          - '21.0.8.fx-zulu'
+          - '21.0.8-zulu'
+          - '17.0.17.fx-zulu'
+          - '17.0.17-zulu'
+          - '17.0.16.fx-zulu'
+          - '17.0.16-zulu'
+          - '11.0.29.fx-zulu'
+          - '11.0.29-zulu'
+          - '11.0.28.fx-zulu'
+          - '11.0.28-zulu'
+          - '8.0.472.fx-zulu'
+          - '8.0.472-zulu'
+          - '8.0.462.fx-zulu'
+          - '8.0.462-zulu'
+          - '7.0.352-zulu'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=${{ matrix.version }}" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'zulu'
+          java-version-file: '.sdkmanrc'
+      - name: Verify
+        run: java -version
+        shell: bash
