@@ -1,0 +1,277 @@
+name: Test SDKMAN - Advanced Scenarios
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-check-latest:
+    name: Check Latest - ${{ matrix.dist }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dist:
+          - { name: 'corretto', version: '21-amzn' }
+          - { name: 'microsoft', version: '21-ms' }
+          - { name: 'temurin', version: '21-tem' }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=${{ matrix.dist.version }}" > .sdkmanrc
+        shell: bash
+      - name: Setup with check-latest
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: ${{ matrix.dist.name }}
+          java-version-file: '.sdkmanrc'
+          check-latest: true
+      - name: Verify
+        run: java -version
+
+  test-job-summary:
+    name: Job Summary Output
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dist: [corretto, microsoft, temurin]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=21-amzn" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: ${{ matrix.dist }}
+          java-version-file: '.sdkmanrc'
+          job-summary: true
+      - name: Check summary
+        run: |
+          echo "Job summary should be generated"
+          cat $GITHUB_STEP_SUMMARY || echo "No summary"
+
+  test-environment-variables:
+    name: Environment Variables Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=21.0.9-amzn" > .sdkmanrc
+        shell: bash
+      - name: Setup Java with env vars
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc'
+        env:
+          JAVA_TOOL_OPTIONS: '-Xmx2g -XX:+UseG1GC'
+      - name: Verify env vars
+        run: |
+          echo "JAVA_TOOL_OPTIONS=$JAVA_TOOL_OPTIONS"
+          java -XshowSettings:vm -version
+        shell: bash
+
+  test-multiple-jdks-toolchain:
+    name: Multiple JDKs for Toolchains
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create multiple .sdkmanrc files
+        run: |
+          echo "java=8.0.472-amzn" > .sdkmanrc-8
+          echo "java=11.0.29-amzn" > .sdkmanrc-11
+          echo "java=17.0.17-amzn" > .sdkmanrc-17
+          echo "java=21.0.9-amzn" > .sdkmanrc-21
+      
+      - name: Setup JDK 8
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc-8'
+      
+      - name: Setup JDK 11
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc-11'
+      
+      - name: Setup JDK 17
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc-17'
+      
+      - name: Setup JDK 21 (primary)
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc-21'
+      
+      - name: Verify all JDKs
+        run: |
+          java -version
+          echo "All JDKs should be available for Maven toolchains"
+
+  test-architecture-support:
+    name: Architecture - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: macos-latest
+            arch: x64
+          - os: macos-latest
+            arch: arm64
+          - os: windows-latest
+            arch: x64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=21.0.9-amzn" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc'
+          architecture: ${{ matrix.arch }}
+      - name: Verify architecture
+        run: |
+          java -version
+          java -XshowSettings:properties -version 2>&1 | grep "os.arch" || echo "Arch check"
+        shell: bash
+
+  test-working-directory:
+    name: Working Directory with .sdkmanrc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create project structure
+        run: |
+          mkdir -p projects/backend
+          mkdir -p projects/frontend
+          echo "java=21.0.9-amzn" > projects/backend/.sdkmanrc
+          echo "java=17.0.17-ms" > projects/frontend/.sdkmanrc
+      
+      - name: Setup backend Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: 'projects/backend/.sdkmanrc'
+      
+      - name: Test backend
+        working-directory: projects/backend
+        run: java -version
+      
+      - name: Setup frontend Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'microsoft'
+          java-version-file: 'projects/frontend/.sdkmanrc'
+      
+      - name: Test frontend
+        working-directory: projects/frontend
+        run: java -version
+
+  test-overwrite-settings:
+    name: Overwrite Settings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=21.0.9-amzn" > .sdkmanrc
+      - name: Setup Java with overwrite
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc'
+          overwrite-settings: true
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+      - name: Check settings
+        run: |
+          if [ -f ~/.m2/settings.xml ]; then
+            cat ~/.m2/settings.xml
+          fi
+
+  test-cache-dependency-path:
+    name: Custom Cache Dependency Path
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create custom structure
+        run: |
+          mkdir -p custom/build
+          echo "java=21.0.9-amzn" > .sdkmanrc
+          cat > custom/build/pom.xml << 'EOF'
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>test</groupId>
+            <artifactId>test</artifactId>
+            <version>1.0</version>
+          </project>
+          EOF
+      
+      - name: Setup Java with custom cache path
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc'
+          cache: 'maven'
+          cache-dependency-path: 'custom/build/pom.xml'
+      
+      - name: Test
+        run: java -version
+
+  test-mvn-toolchain-setup:
+    name: Maven Toolchain Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create multiple JDK configs
+        run: |
+          echo "java=11.0.29-amzn" > .sdkmanrc-11
+          echo "java=17.0.17-amzn" > .sdkmanrc-17
+          echo "java=21.0.9-amzn" > .sdkmanrc-21
+      
+      - name: Setup JDK 11
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc-11'
+          mvn-toolchain-id: 'corretto-11'
+          mvn-toolchain-vendor: 'corretto'
+      
+      - name: Setup JDK 17
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc-17'
+          mvn-toolchain-id: 'corretto-17'
+          mvn-toolchain-vendor: 'corretto'
+      
+      - name: Setup JDK 21
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc-21'
+          mvn-toolchain-id: 'corretto-21'
+          mvn-toolchain-vendor: 'corretto'
+      
+      - name: Verify toolchains
+        run: |
+          if [ -f ~/.m2/toolchains.xml ]; then
+            echo "Toolchains file created:"
+            cat ~/.m2/toolchains.xml
+          fi
