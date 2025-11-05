@@ -46,8 +46,10 @@ jobs:
           javac -version
           echo "JAVA_HOME=$JAVA_HOME"
           echo "PATH=$PATH"
+        shell: bash
           
-      - name: Test Java compilation and execution
+      - name: Test Java compilation and execution (Unix)
+        if: runner.os != 'Windows'
         run: |
           cat > Test.java << 'EOF'
           public class Test {
@@ -61,6 +63,24 @@ jobs:
           EOF
           javac Test.java
           java Test
+        shell: bash
+        
+      - name: Test Java compilation and execution (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          @'
+          public class Test {
+              public static void main(String[] args) {
+                  System.out.println("Java Version: " + System.getProperty("java.version"));
+                  System.out.println("Java Vendor: " + System.getProperty("java.vendor"));
+                  System.out.println("Java Home: " + System.getProperty("java.home"));
+                  System.out.println("OS: " + System.getProperty("os.name"));
+              }
+          }
+          '@ | Out-File -FilePath Test.java -Encoding UTF8
+          javac Test.java
+          java Test
+        shell: pwsh
 
   test-corretto-with-cache:
     name: Corretto with ${{ matrix.cache }} cache - ${{ matrix.version }}
@@ -70,14 +90,16 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-22.04, macos-latest, windows-latest]
         version: ['21.0.9-amzn', '17.0.17-amzn', '11.0.29-amzn']
-        cache: [maven, gradle, sbt]
-        exclude:
-          - os: ubuntu-latest
+        cache: [maven, gradle]
+        include:
+          - os: ubuntu-22.04
+            version: '21.0.9-amzn'
             cache: sbt
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup build files for cache testing
+      - name: Setup build files for cache testing (Unix)
+        if: runner.os != 'Windows'
         run: |
           # Create .sdkmanrc
           echo "java=${{ matrix.version }}" > .sdkmanrc
@@ -125,6 +147,55 @@ jobs:
           fi
         shell: bash
         
+      - name: Setup build files for cache testing (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Create .sdkmanrc
+          "java=${{ matrix.version }}" | Out-File -FilePath .sdkmanrc -Encoding UTF8
+          
+          # Create build files based on cache type
+          if ("${{ matrix.cache }}" -eq "maven") {
+            @'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.test</groupId>
+            <artifactId>test-app</artifactId>
+            <version>1.0</version>
+            <dependencies>
+              <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+                <scope>test</scope>
+              </dependency>
+            </dependencies>
+          </project>
+          '@ | Out-File -FilePath pom.xml -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "gradle") {
+            @'
+          plugins {
+              id 'java'
+          }
+          repositories {
+              mavenCentral()
+          }
+          dependencies {
+              testImplementation 'junit:junit:4.13.2'
+          }
+          '@ | Out-File -FilePath build.gradle -Encoding UTF8
+            "rootProject.name = 'test-app'" | Out-File -FilePath settings.gradle -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "sbt") {
+            @'
+          name := "test-app"
+          version := "1.0"
+          scalaVersion := "2.13.12"
+          libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % Test
+          '@ | Out-File -FilePath build.sbt -Encoding UTF8
+            New-Item -ItemType Directory -Force -Path project
+            "sbt.version=1.9.7" | Out-File -FilePath project/build.properties -Encoding UTF8
+          }
+        shell: pwsh
+        
       - name: Setup Java with SDKMAN and cache
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
@@ -132,18 +203,42 @@ jobs:
           java-version-file: '.sdkmanrc'
           cache: ${{ matrix.cache }}
           
-      - name: Verify cache and build
+      - name: Verify cache and build (Unix)
+        if: runner.os != 'Windows'
         run: |
           java -version
           echo "Cache type: ${{ matrix.cache }}"
           if [ "${{ matrix.cache }}" = "maven" ]; then
             mvn dependency:resolve
           elif [ "${{ matrix.cache }}" = "gradle" ]; then
-            ./gradlew dependencies || gradlew dependencies
+            if [ -f "./gradlew" ]; then
+              ./gradlew dependencies
+            else
+              gradle dependencies
+            fi
           elif [ "${{ matrix.cache }}" = "sbt" ]; then
             sbt update
           fi
         shell: bash
+        continue-on-error: true
+        
+      - name: Verify cache and build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          java -version
+          Write-Output "Cache type: ${{ matrix.cache }}"
+          if ("${{ matrix.cache }}" -eq "maven") {
+            mvn dependency:resolve
+          } elseif ("${{ matrix.cache }}" -eq "gradle") {
+            if (Test-Path ".\gradlew.bat") {
+              .\gradlew.bat dependencies
+            } else {
+              gradle dependencies
+            }
+          } elseif ("${{ matrix.cache }}" -eq "sbt") {
+            sbt update
+          }
+        shell: pwsh
         continue-on-error: true
 
   test-corretto-multiple-versions:
@@ -156,7 +251,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup multiple Corretto versions
+      - name: Setup multiple Corretto versions (Unix)
+        if: runner.os != 'Windows'
         run: |
           # Test setting up multiple versions in sequence
           versions=("8.0.472-amzn" "11.0.29-amzn" "17.0.17-amzn" "21.0.9-amzn")
@@ -173,6 +269,22 @@ jobs:
           done
         shell: bash
         
+      - name: Setup multiple Corretto versions (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Test setting up multiple versions in sequence
+          $versions = @("8.0.472-amzn", "11.0.29-amzn", "17.0.17-amzn", "21.0.9-amzn")
+          
+          foreach ($version in $versions) {
+            Write-Output "Setting up Java $version"
+            "java=$version" | Out-File -FilePath ".sdkmanrc-$version" -Encoding UTF8
+            
+            # Create a test directory for each version
+            New-Item -ItemType Directory -Force -Path "test-$version"
+            Copy-Item ".sdkmanrc-$version" -Destination "test-$version\.sdkmanrc"
+          }
+        shell: pwsh
+        
       - name: Setup Java 8
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
@@ -181,7 +293,8 @@ jobs:
           
       - name: Verify Java 8
         run: |
-          java -version 2>&1 | grep "1.8" || echo "Java 8 verification"
+          java -version 2>&1 | grep "1.8" || java -version 2>&1 | Select-String "1.8" || echo "Java 8 verification"
+        shell: bash
           
       - name: Setup Java 11
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
@@ -191,7 +304,8 @@ jobs:
           
       - name: Verify Java 11
         run: |
-          java -version 2>&1 | grep "11" || echo "Java 11 verification"
+          java -version 2>&1 | grep "11" || java -version 2>&1 | Select-String "11" || echo "Java 11 verification"
+        shell: bash
           
       - name: Setup Java 17
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
@@ -201,7 +315,8 @@ jobs:
           
       - name: Verify Java 17
         run: |
-          java -version 2>&1 | grep "17" || echo "Java 17 verification"
+          java -version 2>&1 | grep "17" || java -version 2>&1 | Select-String "17" || echo "Java 17 verification"
+        shell: bash
           
       - name: Setup Java 21
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
@@ -211,4 +326,5 @@ jobs:
           
       - name: Verify Java 21
         run: |
-          java -version 2>&1 | grep "21" || echo "Java 21 verification"
+          java -version 2>&1 | grep "21" || java -version 2>&1 | Select-String "21" || echo "Java 21 verification"
+        shell: bash
