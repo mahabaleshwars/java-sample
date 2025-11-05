@@ -31,6 +31,8 @@ jobs:
         with:
           distribution: 'jetbrains'
           java-version-file: '.sdkmanrc'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Verify Java installation
         run: |
@@ -171,6 +173,8 @@ jobs:
           distribution: 'jetbrains'
           java-version-file: '.sdkmanrc'
           cache: ${{ matrix.cache }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Test cache functionality (Unix)
         if: runner.os != 'Windows'
@@ -202,25 +206,132 @@ jobs:
     name: JetBrains edge cases - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+    
     steps:
       - uses: actions/checkout@v4
-      - name: Test invalid version
+      
+      # Test 1: Invalid version
+      - name: Create invalid version .sdkmanrc
         run: echo "java=99.99.99-jbr" > .sdkmanrc
         shell: bash
+        
       - name: Setup with invalid version
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'jetbrains'
           java-version-file: '.sdkmanrc'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
         id: setup-invalid
-      - name: Verify error handling
+        
+      - name: Verify invalid version handling
         run: |
           if [ "${{ steps.setup-invalid.outcome }}" = "failure" ]; then
-            echo "✓ Error handling works"
+            echo "✓ Invalid version correctly rejected on ${{ runner.os }}"
           else
+            echo "✗ Invalid version should fail on ${{ runner.os }}"
+            exit 1
+          fi
+        shell: bash
+      
+      # Test 2: Missing .sdkmanrc file
+      - name: Test missing file handling
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'jetbrains'
+          java-version-file: 'nonexistent.sdkmanrc'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        id: setup-missing
+        
+      - name: Verify missing file handling
+        run: |
+          if [ "${{ steps.setup-missing.outcome }}" = "failure" ]; then
+            echo "✓ Missing file correctly reported on ${{ runner.os }}"
+          else
+            echo "✗ Missing file should fail on ${{ runner.os }}"
+            exit 1
+          fi
+        shell: bash
+      
+      # Test 3: Malformed .sdkmanrc
+      - name: Create malformed .sdkmanrc
+        run: echo "This is not valid sdkmanrc content" > .sdkmanrc
+        shell: bash
+        
+      - name: Setup with malformed file
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'jetbrains'
+          java-version-file: '.sdkmanrc'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        id: setup-malformed
+        
+      - name: Verify malformed file handling
+        run: |
+          if [ "${{ steps.setup-malformed.outcome }}" = "failure" ]; then
+            echo "✓ Malformed file correctly rejected on ${{ runner.os }}"
+          else
+            echo "✗ Malformed file should fail on ${{ runner.os }}"
+            exit 1
+          fi
+        shell: bash
+      
+      # Test 4: Empty .sdkmanrc file
+      - name: Create empty .sdkmanrc
+        run: touch .sdkmanrc
+        shell: bash
+        
+      - name: Setup with empty file
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'jetbrains'
+          java-version-file: '.sdkmanrc'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        id: setup-empty
+        
+      - name: Verify empty file handling
+        run: |
+          if [ "${{ steps.setup-empty.outcome }}" = "failure" ]; then
+            echo "✓ Empty file correctly rejected on ${{ runner.os }}"
+          else
+            echo "✗ Empty file should fail on ${{ runner.os }}"
+            exit 1
+          fi
+        shell: bash
+      
+      # Test 5: Valid setup after errors (recovery test)
+      - name: Create valid .sdkmanrc
+        run: |
+          echo "java=21.0.9-jbr" > .sdkmanrc
+          cat .sdkmanrc
+        shell: bash
+        
+      - name: Setup with valid version (recovery test)
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'jetbrains'
+          java-version-file: '.sdkmanrc'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: setup-valid
+        
+      - name: Verify valid setup after errors
+        run: |
+          if [ "${{ steps.setup-valid.outcome }}" = "success" ]; then
+            echo "✓ Valid setup succeeded after errors on ${{ runner.os }}"
+            java -version
+          else
+            echo "✗ Valid setup should succeed on ${{ runner.os }}"
             exit 1
           fi
         shell: bash
