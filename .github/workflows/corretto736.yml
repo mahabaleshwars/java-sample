@@ -35,7 +35,7 @@ jobs:
         shell: bash
       
       - name: Setup Java with SDKMAN using .sdkmanrc
-        uses: actions/setup-java@sdkman-integration
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'corretto'
           java-version-file: '.sdkmanrc'
