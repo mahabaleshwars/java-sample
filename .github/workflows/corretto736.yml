@@ -68,9 +68,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, ubuntu-22.04, macos-latest, windows-latest]
         version: ['21.0.9-amzn', '17.0.17-amzn', '11.0.29-amzn']
         cache: [maven, gradle, sbt]
+        exclude:
+          - os: ubuntu-latest
+            cache: sbt
     steps:
       - uses: actions/checkout@v4
       
