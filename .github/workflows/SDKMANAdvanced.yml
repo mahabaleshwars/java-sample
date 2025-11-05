@@ -250,11 +250,10 @@ jobs:
           echo "java=25-ms" > projects/frontend/.sdkmanrc
       
       - name: Setup backend Java
-        working-directory: projects/backend
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'corretto'
-          java-version-file: '.sdkmanrc'
+          java-version-file: 'projects/backend/.sdkmanrc'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
@@ -265,11 +264,10 @@ jobs:
           echo "✓ Backend Java verified"
       
       - name: Setup frontend Java
-        working-directory: projects/frontend
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'microsoft'
-          java-version-file: '.sdkmanrc'
+          java-version-file: 'projects/frontend/.sdkmanrc'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
