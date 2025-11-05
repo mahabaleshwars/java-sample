@@ -1,0 +1,226 @@
+name: Test SDKMAN - JetBrains Runtime
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-jetbrains-basic:
+    name: JetBrains ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version:
+          - '21.0.9-jbr'
+          - '21.0.8-jbr'
+          - '17.0.14-jbr'
+          - '11.0.14.1-jbr'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create .sdkmanrc file
+        run: |
+          echo "java=${{ matrix.version }}" > .sdkmanrc
+          cat .sdkmanrc
+        shell: bash
+      
+      - name: Setup Java with SDKMAN
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'jbr'
+          java-version-file: '.sdkmanrc'
+      
+      - name: Verify Java installation
+        run: |
+          java -version
+          javac -version
+          echo "JAVA_HOME=$JAVA_HOME"
+        shell: bash
+          
+      - name: Test Java functionality (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cat > Test.java << 'EOF'
+          public class Test {
+              public static void main(String[] args) {
+                  System.out.println("✓ Java Version: " + System.getProperty("java.version"));
+                  System.out.println("✓ Vendor: " + System.getProperty("java.vendor"));
+                  System.out.println("✓ JAVA_HOME: " + System.getProperty("java.home"));
+              }
+          }
+          EOF
+          javac Test.java
+          java Test
+        shell: bash
+        
+      - name: Test Java functionality (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          @'
+          public class Test {
+              public static void main(String[] args) {
+                  System.out.println("✓ Java Version: " + System.getProperty("java.version"));
+                  System.out.println("✓ Vendor: " + System.getProperty("java.vendor"));
+                  System.out.println("✓ JAVA_HOME: " + System.getProperty("java.home"));
+              }
+          }
+          '@ | Out-File -FilePath Test.java -Encoding UTF8
+          javac Test.java
+          java Test
+        shell: pwsh
+
+  test-jetbrains-cache:
+    name: JetBrains ${{ matrix.cache }} cache - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        cache: [maven, gradle, sbt]
+        version: ['21.0.9-jbr']
+        exclude:
+          - os: ubuntu-latest
+            cache: sbt
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create .sdkmanrc and build files (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          echo "java=${{ matrix.version }}" > .sdkmanrc
+          
+          if [ "${{ matrix.cache }}" = "maven" ]; then
+            cat > pom.xml << 'EOF'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.test</groupId>
+            <artifactId>jbr-test</artifactId>
+            <version>1.0</version>
+            <dependencies>
+              <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+              </dependency>
+            </dependencies>
+          </project>
+          EOF
+          elif [ "${{ matrix.cache }}" = "gradle" ]; then
+            cat > build.gradle << 'EOF'
+          plugins { id 'java' }
+          repositories { mavenCentral() }
+          dependencies { testImplementation 'junit:junit:4.13.2' }
+          EOF
+            echo 'rootProject.name = "jbr-test"' > settings.gradle
+          elif [ "${{ matrix.cache }}" = "sbt" ]; then
+            cat > build.sbt << 'EOF'
+          name := "jbr-test"
+          version := "1.0"
+          scalaVersion := "2.13.12"
+          EOF
+            mkdir -p project
+            echo 'sbt.version=1.9.7' > project/build.properties
+          fi
+        shell: bash
+        
+      - name: Create .sdkmanrc and build files (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          "java=${{ matrix.version }}" | Out-File -FilePath .sdkmanrc -Encoding UTF8
+          
+          if ("${{ matrix.cache }}" -eq "maven") {
+            @'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.test</groupId>
+            <artifactId>jbr-test</artifactId>
+            <version>1.0</version>
+            <dependencies>
+              <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+              </dependency>
+            </dependencies>
+          </project>
+          '@ | Out-File -FilePath pom.xml -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "gradle") {
+            @'
+          plugins { id 'java' }
+          repositories { mavenCentral() }
+          dependencies { testImplementation 'junit:junit:4.13.2' }
+          '@ | Out-File -FilePath build.gradle -Encoding UTF8
+            "rootProject.name = 'jbr-test'" | Out-File -FilePath settings.gradle -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "sbt") {
+            @'
+          name := "jbr-test"
+          version := "1.0"
+          scalaVersion := "2.13.12"
+          '@ | Out-File -FilePath build.sbt -Encoding UTF8
+            New-Item -ItemType Directory -Force -Path project | Out-Null
+            "sbt.version=1.9.7" | Out-File -FilePath project/build.properties -Encoding UTF8
+          }
+        shell: pwsh
+        
+      - name: Setup Java with cache
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'jbr'
+          java-version-file: '.sdkmanrc'
+          cache: ${{ matrix.cache }}
+          
+      - name: Test cache functionality (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          if [ "${{ matrix.cache }}" = "maven" ]; then
+            mvn dependency:resolve
+          elif [ "${{ matrix.cache }}" = "gradle" ]; then
+            gradle dependencies --no-daemon || ./gradlew dependencies --no-daemon
+          elif [ "${{ matrix.cache }}" = "sbt" ]; then
+            sbt update
+          fi
+        shell: bash
+        continue-on-error: true
+        
+      - name: Test cache functionality (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          if ("${{ matrix.cache }}" -eq "maven") {
+            mvn dependency:resolve
+          } elseif ("${{ matrix.cache }}" -eq "gradle") {
+            gradle dependencies --no-daemon
+          } elseif ("${{ matrix.cache }}" -eq "sbt") {
+            sbt update
+          }
+        shell: pwsh
+        continue-on-error: true
+
+  test-jetbrains-edge-cases:
+    name: JetBrains edge cases - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test invalid version
+        run: echo "java=99.99.99-jbr" > .sdkmanrc
+        shell: bash
+      - name: Setup with invalid version
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'jbr'
+          java-version-file: '.sdkmanrc'
+        continue-on-error: true
+        id: setup-invalid
+      - name: Verify error handling
+        run: |
+          if [ "${{ steps.setup-invalid.outcome }}" = "failure" ]; then
+            echo "✓ Error handling works"
+          else
+            exit 1
+          fi
+        shell: bash
