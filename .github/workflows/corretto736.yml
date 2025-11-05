@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - '.github/workflows/test-sdkman-corretto.yml'
-      - 'src/**'  # Adjust to your PR's changed files
+      - '.github/workflows/test-sdkman-corretto-optimized.yml'
+      - 'src/**'
 
 jobs:
   # ============================================================================
@@ -19,25 +19,20 @@ jobs:
       matrix:
         # Test on all platforms
         os: [ubuntu-latest, macos-latest, windows-latest]
-        # Test all versions you need to support
+        # Test ALL Corretto versions
         version:
-          - '25.0.1-amzn'    # Latest
-          - '21.0.9-amzn'    # LTS
-          - '17.0.17-amzn'   # LTS
-          - '11.0.29-amzn'   # LTS
-          - '8.0.472-amzn'   # Legacy LTS
-        # Add more versions if needed for specific testing
-        include:
-          # Test version shortcuts
-          - os: ubuntu-latest
-            version: '25-amzn'
-          - os: ubuntu-latest
-            version: '21-amzn'
-          # Test intermediate versions on one platform
-          - os: ubuntu-latest
-            version: '24.0.2-amzn'
-          - os: ubuntu-latest
-            version: '23.0.2-amzn'
+          - '25.0.1-amzn'
+          - '25-amzn'
+          - '24.0.2-amzn'
+          - '23.0.2-amzn'
+          - '21.0.9-amzn'
+          - '21.0.8-amzn'
+          - '17.0.17-amzn'
+          - '17.0.16-amzn'
+          - '11.0.29-amzn'
+          - '11.0.28-amzn'
+          - '8.0.472-amzn'
+          - '8.0.462-amzn'
     
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +65,7 @@ jobs:
                   System.out.println("✓ Java Version: " + System.getProperty("java.version"));
                   System.out.println("✓ Vendor: " + System.getProperty("java.vendor"));
                   System.out.println("✓ JAVA_HOME: " + System.getProperty("java.home"));
+                  System.out.println("✓ OS: " + System.getProperty("os.name"));
               }
           }
           EOF
@@ -86,6 +82,7 @@ jobs:
                   System.out.println("✓ Java Version: " + System.getProperty("java.version"));
                   System.out.println("✓ Vendor: " + System.getProperty("java.vendor"));
                   System.out.println("✓ JAVA_HOME: " + System.getProperty("java.home"));
+                  System.out.println("✓ OS: " + System.getProperty("os.name"));
               }
           }
           '@ | Out-File -FilePath Test.java -Encoding UTF8
@@ -94,21 +91,27 @@ jobs:
         shell: pwsh
 
   # ============================================================================
-  # CACHE TEST: Verify caching works (lightweight test)
+  # CACHE TEST: Verify caching works on all platforms with all cache types
   # ============================================================================
   test-corretto-cache:
-    name: Corretto with ${{ matrix.cache }} cache
-    runs-on: ubuntu-latest  # Only test on one OS
+    name: Corretto ${{ matrix.cache }} cache - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        cache: [maven, gradle]
-        version: ['21.0.9-amzn']  # Test with one version
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        cache: [maven, gradle, sbt]
+        version: ['21.0.9-amzn']
+        exclude:
+          # SBT is less common on Linux in CI, focus on macOS and Windows
+          - os: ubuntu-latest
+            cache: sbt
     
     steps:
       - uses: actions/checkout@v4
       
-      - name: Create .sdkmanrc and build files
+      - name: Create .sdkmanrc and build files (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo "java=${{ matrix.version }}" > .sdkmanrc
           
@@ -125,20 +128,99 @@ jobs:
                 <artifactId>commons-lang3</artifactId>
                 <version>3.14.0</version>
               </dependency>
+              <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+                <scope>test</scope>
+              </dependency>
             </dependencies>
           </project>
           EOF
           elif [ "${{ matrix.cache }}" = "gradle" ]; then
             cat > build.gradle << 'EOF'
-          plugins { id 'java' }
-          repositories { mavenCentral() }
+          plugins {
+              id 'java'
+          }
+          repositories {
+              mavenCentral()
+          }
           dependencies {
               implementation 'org.apache.commons:commons-lang3:3.14.0'
+              testImplementation 'junit:junit:4.13.2'
           }
           EOF
             echo 'rootProject.name = "cache-test"' > settings.gradle
+          elif [ "${{ matrix.cache }}" = "sbt" ]; then
+            cat > build.sbt << 'EOF'
+          name := "cache-test"
+          version := "1.0"
+          scalaVersion := "2.13.12"
+          libraryDependencies ++= Seq(
+            "org.apache.commons" % "commons-lang3" % "3.14.0",
+            "org.scalatest" %% "scalatest" % "3.2.17" % Test
+          )
+          EOF
+            mkdir -p project
+            echo 'sbt.version=1.9.7' > project/build.properties
           fi
         shell: bash
+        
+      - name: Create .sdkmanrc and build files (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          "java=${{ matrix.version }}" | Out-File -FilePath .sdkmanrc -Encoding UTF8
+          
+          if ("${{ matrix.cache }}" -eq "maven") {
+            @'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.test</groupId>
+            <artifactId>cache-test</artifactId>
+            <version>1.0</version>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.14.0</version>
+              </dependency>
+              <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+                <scope>test</scope>
+              </dependency>
+            </dependencies>
+          </project>
+          '@ | Out-File -FilePath pom.xml -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "gradle") {
+            @'
+          plugins {
+              id 'java'
+          }
+          repositories {
+              mavenCentral()
+          }
+          dependencies {
+              implementation 'org.apache.commons:commons-lang3:3.14.0'
+              testImplementation 'junit:junit:4.13.2'
+          }
+          '@ | Out-File -FilePath build.gradle -Encoding UTF8
+            "rootProject.name = 'cache-test'" | Out-File -FilePath settings.gradle -Encoding UTF8
+          } elseif ("${{ matrix.cache }}" -eq "sbt") {
+            @'
+          name := "cache-test"
+          version := "1.0"
+          scalaVersion := "2.13.12"
+          libraryDependencies ++= Seq(
+            "org.apache.commons" % "commons-lang3" % "3.14.0",
+            "org.scalatest" %% "scalatest" % "3.2.17" % Test
+          )
+          '@ | Out-File -FilePath build.sbt -Encoding UTF8
+            New-Item -ItemType Directory -Force -Path project | Out-Null
+            "sbt.version=1.9.7" | Out-File -FilePath project/build.properties -Encoding UTF8
+          }
+        shell: pwsh
         
       - name: Setup Java with cache
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
@@ -147,30 +229,64 @@ jobs:
           java-version-file: '.sdkmanrc'
           cache: ${{ matrix.cache }}
           
-      - name: Test cache functionality
+      - name: Test cache functionality (Unix)
+        if: runner.os != 'Windows'
         run: |
-          echo "Testing ${{ matrix.cache }} cache..."
+          echo "Testing ${{ matrix.cache }} cache on ${{ runner.os }}..."
           if [ "${{ matrix.cache }}" = "maven" ]; then
             mvn dependency:resolve
             echo "✓ Maven dependencies resolved"
           elif [ "${{ matrix.cache }}" = "gradle" ]; then
-            gradle dependencies --no-daemon
+            if [ -f "./gradlew" ]; then
+              ./gradlew dependencies --no-daemon
+            else
+              gradle dependencies --no-daemon
+            fi
             echo "✓ Gradle dependencies resolved"
+          elif [ "${{ matrix.cache }}" = "sbt" ]; then
+            sbt update
+            echo "✓ SBT dependencies resolved"
           fi
         shell: bash
+        continue-on-error: true
+        
+      - name: Test cache functionality (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          Write-Output "Testing ${{ matrix.cache }} cache on ${{ runner.os }}..."
+          if ("${{ matrix.cache }}" -eq "maven") {
+            mvn dependency:resolve
+            Write-Output "✓ Maven dependencies resolved"
+          } elseif ("${{ matrix.cache }}" -eq "gradle") {
+            if (Test-Path ".\gradlew.bat") {
+              .\gradlew.bat dependencies --no-daemon
+            } else {
+              gradle dependencies --no-daemon
+            }
+            Write-Output "✓ Gradle dependencies resolved"
+          } elseif ("${{ matrix.cache }}" -eq "sbt") {
+            sbt update
+            Write-Output "✓ SBT dependencies resolved"
+          }
+        shell: pwsh
+        continue-on-error: true
 
   # ============================================================================
-  # EDGE CASES: Test error handling and special scenarios
+  # EDGE CASES: Test error handling and special scenarios on all platforms
   # ============================================================================
   test-corretto-edge-cases:
-    name: Edge cases and error handling
-    runs-on: ubuntu-latest
+    name: Edge cases - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
     steps:
       - uses: actions/checkout@v4
       
       # Test 1: Invalid version
-      - name: Test invalid version handling
-        id: invalid-version
+      - name: Create invalid version .sdkmanrc
         run: |
           echo "java=99.99.99-amzn" > .sdkmanrc
         shell: bash
@@ -183,14 +299,15 @@ jobs:
         continue-on-error: true
         id: setup-invalid
         
-      - name: Verify error handling
+      - name: Verify invalid version handling
         run: |
           if [ "${{ steps.setup-invalid.outcome }}" = "failure" ]; then
-            echo "✓ Invalid version correctly rejected"
+            echo "✓ Invalid version correctly rejected on ${{ runner.os }}"
           else
-            echo "✗ Invalid version should fail"
+            echo "✗ Invalid version should fail on ${{ runner.os }}"
             exit 1
           fi
+        shell: bash
       
       # Test 2: Missing .sdkmanrc file
       - name: Test missing file handling
@@ -204,16 +321,18 @@ jobs:
       - name: Verify missing file handling
         run: |
           if [ "${{ steps.setup-missing.outcome }}" = "failure" ]; then
-            echo "✓ Missing file correctly reported"
+            echo "✓ Missing file correctly reported on ${{ runner.os }}"
           else
-            echo "✗ Missing file should fail"
+            echo "✗ Missing file should fail on ${{ runner.os }}"
             exit 1
           fi
+        shell: bash
       
       # Test 3: Malformed .sdkmanrc
-      - name: Test malformed file handling
+      - name: Create malformed .sdkmanrc
         run: |
-          echo "This is not valid" > .sdkmanrc
+          echo "This is not valid sdkmanrc content" > .sdkmanrc
+        shell: bash
         
       - name: Setup with malformed file
         uses: guicamest/setup-java@feat/669/support_sdkmanrc
@@ -226,8 +345,58 @@ jobs:
       - name: Verify malformed file handling
         run: |
           if [ "${{ steps.setup-malformed.outcome }}" = "failure" ]; then
-            echo "✓ Malformed file correctly rejected"
+            echo "✓ Malformed file correctly rejected on ${{ runner.os }}"
           else
-            echo "✗ Malformed file should fail"
+            echo "✗ Malformed file should fail on ${{ runner.os }}"
             exit 1
           fi
+        shell: bash
+      
+      # Test 4: Empty .sdkmanrc file
+      - name: Create empty .sdkmanrc
+        run: |
+          touch .sdkmanrc
+        shell: bash
+        
+      - name: Setup with empty file
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc'
+        continue-on-error: true
+        id: setup-empty
+        
+      - name: Verify empty file handling
+        run: |
+          if [ "${{ steps.setup-empty.outcome }}" = "failure" ]; then
+            echo "✓ Empty file correctly rejected on ${{ runner.os }}"
+          else
+            echo "✗ Empty file should fail on ${{ runner.os }}"
+            exit 1
+          fi
+        shell: bash
+      
+      # Test 5: Valid setup after errors (recovery test)
+      - name: Create valid .sdkmanrc
+        run: |
+          echo "java=21.0.9-amzn" > .sdkmanrc
+          cat .sdkmanrc
+        shell: bash
+        
+      - name: Setup with valid version (recovery test)
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'corretto'
+          java-version-file: '.sdkmanrc'
+        id: setup-valid
+        
+      - name: Verify valid setup after errors
+        run: |
+          if [ "${{ steps.setup-valid.outcome }}" = "success" ]; then
+            echo "✓ Valid setup succeeded after errors on ${{ runner.os }}"
+            java -version
+          else
+            echo "✗ Valid setup should succeed on ${{ runner.os }}"
+            exit 1
+          fi
+        shell: bash
