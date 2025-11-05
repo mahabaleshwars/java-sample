@@ -123,7 +123,7 @@ jobs:
         shell: bash
         
       - name: Setup Java with SDKMAN and cache
-        uses: actions/setup-java@sdkman-integration
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'corretto'
           java-version-file: '.sdkmanrc'
@@ -171,7 +171,7 @@ jobs:
         shell: bash
         
       - name: Setup Java 8
-        uses: actions/setup-java@sdkman-integration
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'corretto'
           java-version-file: 'test-8.0.472-amzn/.sdkmanrc'
@@ -181,7 +181,7 @@ jobs:
           java -version 2>&1 | grep "1.8" || echo "Java 8 verification"
           
       - name: Setup Java 11
-        uses: actions/setup-java@sdkman-integration
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'corretto'
           java-version-file: 'test-11.0.29-amzn/.sdkmanrc'
@@ -191,7 +191,7 @@ jobs:
           java -version 2>&1 | grep "11" || echo "Java 11 verification"
           
       - name: Setup Java 17
-        uses: actions/setup-java@sdkman-integration
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'corretto'
           java-version-file: 'test-17.0.17-amzn/.sdkmanrc'
@@ -201,7 +201,7 @@ jobs:
           java -version 2>&1 | grep "17" || echo "Java 17 verification"
           
       - name: Setup Java 21
-        uses: actions/setup-java@sdkman-integration
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
         with:
           distribution: 'corretto'
           java-version-file: 'test-21.0.9-amzn/.sdkmanrc'
