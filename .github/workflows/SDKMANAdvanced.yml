@@ -44,7 +44,7 @@ jobs:
       fail-fast: false
       matrix:
         dist: [corretto, microsoft, temurin]
-        version: ['21.0.9-amzn', '25.0.1-ms', '21.0.8-tem']
+        version: ['21.0.9-amzn', '25-ms', '21.0.8-tem']
         exclude:
           - dist: corretto
             version: '25.0.1-ms'
@@ -506,7 +506,7 @@ jobs:
       # Microsoft 25
       - name: Setup Microsoft 25
         run: |
-          echo "java=25.0.1-ms" > .sdkmanrc
+          echo "java=25-ms" > .sdkmanrc
           cat .sdkmanrc
       
       - name: Install Microsoft 25
