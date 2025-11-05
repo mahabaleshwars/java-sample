@@ -1,0 +1,35 @@
+name: Test SDKMAN - Eclipse Temurin
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-temurin-basic:
+    name: Temurin ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version:
+          - '25.0.1-tem'
+          - '25-tem'
+          - '24.0.2-tem'
+          - '23.0.2-tem'
+          - '21.0.8-tem'
+          - '17.0.16-tem'
+          - '11.0.28-tem'
+          - '8.0.462-tem'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=${{ matrix.version }}" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'temurin'
+          java-version-file: '.sdkmanrc'
+      - name: Verify
+        run: java -version
+        shell: bash
