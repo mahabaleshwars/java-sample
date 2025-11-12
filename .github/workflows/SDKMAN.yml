@@ -6,7 +6,7 @@ on:
 
 jobs:
   test-zulu-basic:
-    name: Zulu ${{ matrix.version }} - ${{ matrix.os }}
+    name: ${{ matrix.version }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
