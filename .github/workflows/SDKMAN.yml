@@ -1,0 +1,29 @@
+
+name: SDKMAN corner cases
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-zulu-basic:
+    name: Zulu ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        version: ['21.0.8-zulu']
+          
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create .sdkmanrc
+        run: echo "java=${{ matrix.version }}" > .sdkmanrc
+        shell: bash
+      - name: Setup Java
+        uses: guicamest/setup-java@feat/669/support_sdkmanrc
+        with:
+          distribution: 'temurin'
+          java-version-file: '.sdkmanrc'
+      - name: Verify
+        run: java -version
+        shell: bash
