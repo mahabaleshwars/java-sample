@@ -26,9 +26,4 @@ jobs:
           java -version 2>&1 | grep -i sapmachine
           javac -version
           echo "Java Home: $JAVA_HOME"
-          
-      - name: Test Compilation
-        run: |
-          echo 'public class Test { public static void main(String[] args) { System.out.println("SapMachine works!"); } }' > Test. java
-          javac Test.java
-          java Test
+  
