@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Test SapMachine Setup
-        uses: RealCLanger/setup-java@<pr-branch>
+        uses: RealCLanger/setup-java@sapmachineURLv4
         with:
           distribution: 'sapmachine'
           java-version: ${{ matrix.java-version }}
