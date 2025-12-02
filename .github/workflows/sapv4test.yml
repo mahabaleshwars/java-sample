@@ -1,0 +1,34 @@
+name: Comprehensive SapMachine Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        java-version: ['11', '17', '21', '22']
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test SapMachine Setup
+        uses: RealCLanger/setup-java@<pr-branch>
+        with:
+          distribution: 'sapmachine'
+          java-version: ${{ matrix.java-version }}
+      
+      - name: Validate Installation
+        shell: bash
+        run: |
+          java -version 2>&1 | grep -i sapmachine
+          javac -version
+          echo "Java Home: $JAVA_HOME"
+          
+      - name: Test Compilation
+        run: |
+          echo 'public class Test { public static void main(String[] args) { System.out.println("SapMachine works!"); } }' > Test. java
+          javac Test.java
+          java Test
