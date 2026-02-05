@@ -1,0 +1,18 @@
+name: Test Java Error Message
+
+on: workflow_dispatch
+
+jobs:
+  test-error:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Use your fork's branch with the PR changes
+      - uses: mahabaleshwars/setup-java@fix/978-descriptive-version-error
+        with:
+          distribution: 'temurin'
+          java-version: '99.0.0'  # Non-existent version to trigger error
+          
+      # This step won't run because the above will fail
+      - run: java -version
