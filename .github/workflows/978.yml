@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       
       # Use your fork's branch with the PR changes
-      - uses: mahabaleshwars/setup-java@fix/978-descriptive-version-error
+      - uses: mahabaleshwars/setup-java@fix/descriptive-version-error-978
         with:
           distribution: 'temurin'
           java-version: '99.0.0'  # Non-existent version to trigger error
