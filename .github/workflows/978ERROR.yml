@@ -1,0 +1,22 @@
+name: Enhance error logging
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-setup-java-907:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 
+        # uses: actions/setup-java@v5
+        uses: priya-kinthali/setup-java@enhance-error-logging-retry
+        with:
+          distribution: oracle
+          java-version: 8
