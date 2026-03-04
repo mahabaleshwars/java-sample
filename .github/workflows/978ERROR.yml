@@ -16,7 +16,7 @@ jobs:
 
       - name: Set up JDK 
         # uses: actions/setup-java@v5
-        uses: priya-kinthali/setup-java@enhance-error-logging-retry
+        uses: mahabaleshwars/setup-java@fix/descriptive-version-error-978
         with:
           distribution: oracle
           java-version: 8
