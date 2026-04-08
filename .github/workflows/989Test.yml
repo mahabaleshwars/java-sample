@@ -1,486 +1,89 @@
-name: PR #989 - Error handling & test logging validation
+name: "Repro Issue 997 - sudo uses wrong JDK"
 
 on:
   workflow_dispatch:
 
 jobs:
-  # ============================================================
-  # Job 1: Run ALL existing unit tests that were modified in PR
-  # Covers: every test file touched (20 files)
-  # ============================================================
-  unit-tests:
-    name: Unit tests (${{ matrix.os }})
+  repro-sudo-java-version:
+    name: "${{ matrix.distribution }} JDK 25 sudo test - ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04]
+        distribution: ['liberica', 'temurin', 'zulu']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: Run full test suite
-        run: npx jest --verbose --coverage 2>&1
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}
-          path: coverage/
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  # ============================================================
-  # Job 2: createVersionNotFoundError() helper — all branches
-  # Covers: base-installer.ts lines 262-296 (the new method)
-  # ============================================================
-  base-helper-tests:
-    name: createVersionNotFoundError helper
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: Run base-installer tests (includes createVersionNotFoundError suite)
-        run: npx jest __tests__/distributors/base-installer.test.ts --verbose
-      - name: Verify - no available versions
-        run: |
-          npx jest __tests__/distributors/base-installer.test.ts \
-            -t "should include all required fields in error message without available versions" --verbose
-      - name: Verify - with available versions
-        run: |
-          npx jest __tests__/distributors/base-installer.test.ts \
-            -t "should include available versions when provided" --verbose
-      - name: Verify - truncation at 50 versions
-        run: |
-          npx jest __tests__/distributors/base-installer.test.ts \
-            -t "should truncate available versions when there are many" --verbose
-      - name: Verify - additionalContext parameter
-        run: |
-          npx jest __tests__/distributors/base-installer.test.ts \
-            -t "should include additional context when provided" --verbose
-      - name: Verify - version not found thrown via setupJava flow
-        run: |
-          npx jest __tests__/distributors/base-installer.test.ts \
-            -t "should throw an error for version not found" --verbose
-
-  # ============================================================
-  # Job 3: Each distribution's version-not-found error path
-  # Covers: the throw this.createVersionNotFoundError() call
-  #         in each of the 12 modified installer.ts files
-  # ============================================================
-  distribution-error-paths:
-    name: ${{ matrix.distribution }} - version not found error
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Adopt (adopt/installer.ts L56-60)
-          - distribution: adopt
-            test_file: __tests__/distributors/adopt-installer.test.ts
-            test_pattern: "version is resolved correctly|version is not found|no versions available"
-
-          # Corretto (corretto/installer.ts L77-81)
-          - distribution: corretto
-            test_file: __tests__/distributors/corretto-installer.test.ts
-            test_pattern: "No matching version found for SemVer"
-
-          # Dragonwell (dragonwell/installer.ts L53-56)
-          - distribution: dragonwell
-            test_file: __tests__/distributors/dragonwell-installer.test.ts
-            test_pattern: "No matching version found for SemVer"
-
-          # GraalVM (graalvm/installer.ts L152-157, L184-190)
-          - distribution: graalvm
-            test_file: __tests__/distributors/graalvm-installer.test.ts
-            test_pattern: "No matching version found|no latest EA version|not found|file not found|unauthorized|forbidden|HTTP errors"
-
-          # JetBrains (jetbrains/installer.ts L47-50)
-          - distribution: jetbrains
-            test_file: __tests__/distributors/jetbrains-installer.test.ts
-            test_pattern: "No matching version found for SemVer"
-
-          # Liberica (liberica/installer.ts L71-75)
-          - distribution: liberica
-            test_file: __tests__/distributors/liberica-installer.test.ts
-            test_pattern: "No matching version found for SemVer|should throw an error"
-
-          # Liberica Linux (same source, linux test data)
-          - distribution: liberica-linux
-            test_file: __tests__/distributors/liberica-linux-installer.test.ts
-            test_pattern: "No matching version found for SemVer|should throw an error"
-
-          # Liberica Windows (same source, windows test data)
-          - distribution: liberica-windows
-            test_file: __tests__/distributors/liberica-windows-installer.test.ts
-            test_pattern: "No matching version found for SemVer|should throw an error"
-
-          # Microsoft (microsoft/installer.ts L78-80)
-          - distribution: microsoft
-            test_file: __tests__/distributors/microsoft-installer.test.ts
-            test_pattern: "No matching version found for SemVer|should throw an error"
-
-          # Oracle (oracle/installer.ts L115)
-          - distribution: oracle
-            test_file: __tests__/distributors/oracle-installer.test.ts
-            test_pattern: "findPackageForDownload"
-
-          # SapMachine (sapmachine/installer.ts L51-55)
-          - distribution: sapmachine
-            test_file: __tests__/distributors/sapmachine-installer.test.ts
-            test_pattern: "No matching version found for SemVer"
-
-          # Semeru (semeru/installer.ts L81-92)
-          - distribution: semeru
-            test_file: __tests__/distributors/semeru-installer.test.ts
-            test_pattern: "No matching version found for SemVer|version is not found|no versions available"
-
-          # Temurin (temurin/installer.ts L59-63)
-          - distribution: temurin
-            test_file: __tests__/distributors/temurin-installer.test.ts
-            test_pattern: "No matching version found for SemVer|version is not found|no versions available"
-
-          # Zulu (zulu/installer.ts L59-63)
-          - distribution: zulu
-            test_file: __tests__/distributors/zulu-installer.test.ts
-            test_pattern: "No matching version found for SemVer"
-
-          # Zulu Linux
-          - distribution: zulu-linux
-            test_file: __tests__/distributors/zulu-linux-installer.test.ts
-            test_pattern: "No matching version found for SemVer"
-
-          # Zulu Windows
-          - distribution: zulu-windows
-            test_file: __tests__/distributors/zulu-windows-installer.test.ts
-            test_pattern: "No matching version found for SemVer"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: "Test: ${{ matrix.distribution }} error paths"
-        run: |
-          npx jest "${{ matrix.test_file }}" \
-            -t "${{ matrix.test_pattern }}" --verbose
-
-  # ============================================================
-  # Job 4: GraalVM-specific changed paths (most complex changes)
-  # Covers: handleHttpResponse(), findEABuildDownloadUrl(),
-  #         fetchEAJson(), downloadTool() — all modified
-  # ============================================================
-  graalvm-comprehensive:
-    name: GraalVM - all changed code paths
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-
-      # handleHttpResponse - 404 path (graalvm/installer.ts L152-157)
-      - name: "GraalVM: 404 → createVersionNotFoundError + GRAALVM_DOWNLOAD_URL hint"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "should throw error when file not found" --verbose
-
-      # handleHttpResponse - 401/403 path (unchanged but exercises flow)
-      - name: "GraalVM: 401/403 → access denied errors"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "unauthorized access|forbidden access" --verbose
-
-      # handleHttpResponse - 500 path (unchanged but exercises flow)
-      - name: "GraalVM: 500 → HTTP error with/without status message"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "other HTTP errors" --verbose
-
-      # findEABuildDownloadUrl - no latest version (graalvm/installer.ts L184-190)
-      - name: "GraalVM EA: no latest version → error with additionalContext"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "should throw error when no latest EA version found|should throw error when no latest version found" --verbose
-
-      # findEABuildDownloadUrl - no matching file for arch (L200-207)
-      - name: "GraalVM EA: no matching file for architecture"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "should throw error when no matching file for architecture" --verbose
-
-      # findEABuildDownloadUrl - invalid filename (L209-213)
-      - name: "GraalVM EA: invalid filename format"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "filename does not start with graalvm-jdk-" --verbose
-
-      # findEABuildDownloadUrl - happy path
-      - name: "GraalVM EA: successful EA download URL resolution"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "should delegate to findEABuildDownloadUrl|should find latest version and return correct URL" --verbose
-
-      # fetchEAJson - all paths (L224-265)
-      - name: "GraalVM fetchEAJson: all error & success paths"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "fetchEAJson" --verbose
-
-      # downloadTool - extraction validation (L34-83)
-      - name: "GraalVM downloadTool: extraction validation paths"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "downloadTool" --verbose
-
-      # findPackageForDownload - input validation (L85-101)
-      - name: "GraalVM findPackageForDownload: input validation"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts \
-            -t "input validation" --verbose
-
-      # Full GraalVM suite as final sanity check
-      - name: "GraalVM: full test suite"
-        run: |
-          npx jest __tests__/distributors/graalvm-installer.test.ts --verbose
-
-  # ============================================================
-  # Job 5: Semeru-specific additionalContext (Platform: ...)
-  # Covers: semeru/installer.ts L82-92 — platformContext usage
-  # ============================================================
-  semeru-platform-context:
-    name: Semeru - platform context in error
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: "Semeru: version not found includes platform context"
-        run: |
-          npx jest __tests__/distributors/semeru-installer.test.ts --verbose
-
-  # ============================================================
-  # Job 6: Test logging / core.error mock suppression
-  # Covers: the spyCoreError mock added to every test file
-  # ============================================================
-  test-logging-suppression:
-    name: Verify test logging suppression
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: "Run all tests, capture stderr, verify no unhandled core.error noise"
-        run: |
-          # Run tests and capture output
-          npx jest --verbose 2>&1 | tee test-output.log
-
-          # Verify tests pass
-          if [ $? -ne 0 ]; then
-            echo "::error::Tests failed"
-            exit 1
-          fi
-
-          # Check that no raw unhandled error logs leaked
-          # (core.error is mocked, so we should NOT see "::error::" lines
-          # from the code under test — only from jest itself if tests fail)
-          if grep -c "^::error::.*Could not find satisfied version" test-output.log; then
-            echo "::error::Old error message format leaked through mocks"
-            exit 1
-          fi
-
-          echo "✅ No unhandled error log noise detected"
-
-  # ============================================================
-  # Job 7: cache.test.ts and cleanup-java.test.ts
-  # Covers: the mock additions in cache.test.ts & cleanup-java.test.ts
-  # ============================================================
-  cache-and-cleanup-tests:
-    name: Cache & cleanup tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: "Run cache tests"
-        run: npx jest __tests__/cache.test.ts --verbose
-      - name: "Run cleanup-java tests"
-        run: npx jest __tests__/cleanup-java.test.ts --verbose
-      - name: "Run local-installer tests"
-        run: npx jest __tests__/distributors/local-installer.test.ts --verbose
-
-  # ============================================================
-  # Job 8: dist/setup/index.js consistency check
-  # Covers: compiled bundle matches source
-  # ============================================================
-  dist-consistency:
-    name: Verify dist/ is up to date
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: Rebuild dist
-        run: npm run build
-      - name: Check for uncommitted dist changes
-        run: |
-          if [ -n "$(git diff --name-only dist/)" ]; then
-            echo "::error::dist/ is out of date. Run 'npm run build' and commit."
-            git diff --stat dist/
-            exit 1
-          fi
-          echo "✅ dist/ is up to date"
-
-  # ============================================================
-  # Job 9: Error message content validation
-  # Covers: verifies the exact error message format from
-  #         createVersionNotFoundError across all distributions
-  # ============================================================
-  error-message-format:
-    name: Error message format validation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - run: npm ci
-      - name: Verify no old error message patterns remain in source
-        run: |
-          echo "Checking for old error message patterns in src/..."
-
-          # Old patterns that should have been replaced
-          OLD_PATTERNS=(
-            "Could not find satisfied version"
-            "Couldn't find any satisfied version"
-            "Could not find Oracle JDK for SemVer"
-            "Could not find GraalVM for SemVer"
-            "Unable to find latest version for"
-          )
-
-          FOUND=0
-          for pattern in "${OLD_PATTERNS[@]}"; do
-            MATCHES=$(grep -rn "$pattern" src/distributions/ --include="*.ts" || true)
-            if [ -n "$MATCHES" ]; then
-              echo "::error::Old pattern found: '$pattern'"
-              echo "$MATCHES"
-              FOUND=1
-            fi
-          done
-
-          if [ $FOUND -eq 1 ]; then
-            echo "::error::Old error message patterns still present in source"
-            exit 1
-          fi
-
-          echo "✅ All old error patterns have been replaced"
-
-      - name: Verify new error pattern is used consistently
-        run: |
-          echo "Checking that createVersionNotFoundError is used in all distribution installers..."
-
-          DISTRIBUTIONS=(
-            adopt corretto dragonwell graalvm jetbrains
-            liberica microsoft oracle sapmachine semeru
-            temurin zulu
-          )
-
-          MISSING=0
-          for dist in "${DISTRIBUTIONS[@]}"; do
-            FILE="src/distributions/${dist}/installer.ts"
-            if [ -f "$FILE" ]; then
-              if ! grep -q "createVersionNotFoundError" "$FILE"; then
-                echo "::error::${FILE} does not use createVersionNotFoundError"
-                MISSING=1
-              else
-                echo "✅ ${FILE}"
-              fi
-            fi
-          done
-
-          if [ $MISSING -eq 1 ]; then
-            exit 1
-          fi
-
-          echo "✅ All distributions use the centralized error helper"
-
-      - name: Verify test assertions match new error format
-        run: |
-          echo "Checking test files for old assertion patterns..."
-
-          OLD_TEST_PATTERNS=(
-            "Could not find satisfied version for SemVer"
-            "Could not find satisfied version for semver"
-            "Couldn't find any satisfied version"
-          )
-
-          FOUND=0
-          for pattern in "${OLD_TEST_PATTERNS[@]}"; do
-            MATCHES=$(grep -rn "$pattern" __tests__/ --include="*.ts" || true)
-            if [ -n "$MATCHES" ]; then
-              echo "::error::Old test assertion found: '$pattern'"
-              echo "$MATCHES"
-              FOUND=1
-            fi
-          done
-
-          if [ $FOUND -eq 1 ]; then
-            echo "::error::Some tests still assert on old error messages"
-            exit 1
-          fi
-
-          echo "✅ All test assertions use the new error format"
-
-  # ============================================================
-  # Job 10: E2E — intentionally bad version triggers new error
-  # Covers: end-to-end validation that the new error message
-  #         actually appears in action output for real runs
-  # ============================================================
-  e2e-error-message:
-    name: E2E - ${{ matrix.distribution }} invalid version error
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - distribution: temurin
-            version: '999.0.0'
-          - distribution: zulu
-            version: '999.0.0'
-          - distribution: corretto
-            version: '999'
-    steps:
-      - uses: actions/checkout@v4
-      - name: "E2E: setup-java with invalid version (expect failure)"
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
         id: setup-java
-        continue-on-error: true
-        uses: ./
         with:
-          java-version: ${{ matrix.version }}
+          java-version: '25'
           distribution: ${{ matrix.distribution }}
-      - name: Verify action failed
-        if: steps.setup-java.outcome == 'success'
+
+      - name: "Step 1: Verify Java 25 without sudo (baseline)"
         run: |
-          echo "::error::Expected setup-java to fail for version ${{ matrix.version }} but it succeeded"
-          exit 1
-      - name: Verify new error format in logs
-        if: steps.setup-java.outcome == 'failure'
+          echo "=== Without sudo ==="
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "which java: $(which java)"
+          java -version
+          javac -version
+
+      - name: "Step 2: Verify Java version with sudo (expect bug)"
         run: |
-          echo "✅ setup-java correctly failed for ${{ matrix.distribution }} version ${{ matrix.version }}"
-          echo "The error message should contain:"
-          echo "  - 'No matching version found for SemVer'"
-          echo "  - 'Distribution: ...'"
-          echo "  - 'Package type: ...'"
-          echo "  - 'Architecture: ...'"
+          echo "=== With sudo ==="
+          echo "Sudo JAVA_HOME: $(sudo bash -c 'echo $JAVA_HOME')"
+          echo "Sudo which java: $(sudo which java)"
+          sudo java -version
+          sudo javac -version
+
+      - name: "Step 3: Compare user vs sudo environments"
+        run: |
+          echo "=== Environment Comparison ==="
+          echo "User JAVA_HOME : $JAVA_HOME"
+          echo "Sudo JAVA_HOME : $(sudo bash -c 'echo $JAVA_HOME')"
+          echo ""
+          echo "User which java: $(which java)"
+          echo "Sudo which java: $(sudo which java)"
+          echo ""
+          echo "User PATH: $PATH"
+          echo "Sudo PATH: $(sudo bash -c 'echo $PATH')"
+
+      - name: "Step 4: Reproduce javac target release failure"
+        run: |
+          echo "=== Simulating: sudo javac with target 25 ==="
+          USER_JAVAC_VERSION=$(javac -version 2>&1)
+          SUDO_JAVAC_VERSION=$(sudo javac -version 2>&1)
+          echo "User javac: $USER_JAVAC_VERSION"
+          echo "Sudo javac: $SUDO_JAVAC_VERSION"
+          if echo "$SUDO_JAVAC_VERSION" | grep -q "25"; then
+            echo "✅ sudo javac is version 25"
+          else
+            echo "❌ BUG REPRODUCED: sudo javac is NOT version 25"
+            echo "   sudo sees: $SUDO_JAVAC_VERSION"
+            echo "   user sees: $USER_JAVAC_VERSION"
+            exit 1
+          fi
+
+      - name: "Step 5: Reproduce with sudo mvn compile"
+        run: |
+          echo "=== Simulating: sudo mvn compile ==="
+          echo "Without sudo (should work):"
+          mvn compile -q -B || echo "mvn compile failed (may need deps, that is ok)"
+          echo ""
+          echo "With sudo (should show wrong JDK):"
+          sudo mvn compile -q -B 2>&1 || echo "sudo mvn compile failed as expected (wrong JDK or missing mvn)"
+
+      - name: "Step 6: Workaround - sudo -E preserves env"
+        run: |
+          echo "=== Workaround 1: sudo -E (preserve environment) ==="
+          sudo -E java -version
+          sudo -E javac -version
+
+      - name: "Step 7: Workaround - explicit env passthrough"
+        run: |
+          echo "=== Workaround 2: explicit JAVA_HOME and PATH ==="
+          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version
+          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" javac -version
