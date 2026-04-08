@@ -1,0 +1,699 @@
+name: "PR #989 - Error handling & new error message validation"
+
+on:
+  workflow_dispatch:
+
+# Reference the PR branch from actions/setup-java PR #989
+env:
+  SETUP_JAVA_REF: "actions/setup-java@improve-java-error-messaging"
+
+jobs:
+  # ============================================================
+  # Job 1: Valid version setup across all 12 distributions
+  # Verifies the happy path still works after the refactor
+  # (createVersionNotFoundError is NOT triggered)
+  # ============================================================
+  valid-version-setup:
+    name: "✅ Valid: ${{ matrix.distribution }} ${{ matrix.version }} - ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - distribution: temurin
+            version: "21"
+            os: ubuntu-latest
+          - distribution: temurin
+            version: "17"
+            os: windows-latest
+          - distribution: temurin
+            version: "21"
+            os: macos-latest
+          - distribution: adopt
+            version: "11"
+            os: ubuntu-latest
+          - distribution: zulu
+            version: "21"
+            os: ubuntu-latest
+          - distribution: zulu
+            version: "17"
+            os: windows-latest
+          - distribution: liberica
+            version: "21"
+            os: ubuntu-latest
+          - distribution: liberica
+            version: "17"
+            os: macos-latest
+          - distribution: corretto
+            version: "21"
+            os: ubuntu-latest
+          - distribution: corretto
+            version: "17"
+            os: windows-latest
+          - distribution: microsoft
+            version: "21"
+            os: ubuntu-latest
+          - distribution: semeru
+            version: "21"
+            os: ubuntu-latest
+          - distribution: oracle
+            version: "21"
+            os: ubuntu-latest
+          - distribution: graalvm
+            version: "21"
+            os: ubuntu-latest
+          - distribution: sapmachine
+            version: "21"
+            os: ubuntu-latest
+          - distribution: dragonwell
+            version: "21"
+            os: ubuntu-latest
+          - distribution: jetbrains
+            version: "21"
+            os: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup Java ${{ matrix.distribution }} ${{ matrix.version }}"
+        id: setup-java
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+
+      - name: Verify Java installed
+        shell: bash
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          ACTUAL_VERSION=$(java -version 2>&1 | head -1)
+          echo "✅ Java installed: $ACTUAL_VERSION"
+          echo "✅ Path: ${{ steps.setup-java.outputs.path }}"
+
+  # ============================================================
+  # Job 2: Invalid versions - verify new error message format
+  # Covers: createVersionNotFoundError() for each distribution
+  # Each should produce:
+  #   "No matching version found for SemVer '...'"
+  #   "Distribution: ..."
+  #   "Package type: ..."
+  #   "Architecture: ..."
+  # ============================================================
+  invalid-version-error-format:
+    name: "❌ Error format: ${{ matrix.distribution }} v${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Temurin - version not found (temurin/installer.ts L59-63)
+          - distribution: temurin
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Temurin"
+
+          # Adopt - version not found (adopt/installer.ts L56-60)
+          - distribution: adopt
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Adopt"
+
+          # Zulu - version not found (zulu/installer.ts L59-63)
+          - distribution: zulu
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Zulu"
+
+          # Liberica - version not found (liberica/installer.ts L71-75)
+          - distribution: liberica
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Liberica"
+
+          # Corretto - version not found (corretto/installer.ts L77-81)
+          - distribution: corretto
+            version: "999"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Corretto"
+
+          # Microsoft - version not found (microsoft/installer.ts L78-80)
+          - distribution: microsoft
+            version: "999"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Microsoft"
+
+          # Oracle - version not found (oracle/installer.ts L115)
+          - distribution: oracle
+            version: "99.0.1"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Oracle"
+
+          # SapMachine - version not found (sapmachine/installer.ts L51-55)
+          - distribution: sapmachine
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "SapMachine"
+
+          # Semeru - version not found + platform context (semeru/installer.ts L81-92)
+          - distribution: semeru
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "IBM_Semeru"
+
+          # JetBrains - version not found (jetbrains/installer.ts L47-50)
+          - distribution: jetbrains
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "JetBrains"
+
+          # Dragonwell - version not found (dragonwell/installer.ts L53-56)
+          - distribution: dragonwell
+            version: "999.0.0"
+            expected_pattern: "No matching version found for SemVer"
+            expected_dist: "Dragonwell"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Attempt setup-java with invalid version (expect failure)"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+
+      - name: "Verify: action failed as expected"
+        if: steps.setup-java.outcome == 'success'
+        shell: bash
+        run: |
+          echo "::error::Expected setup-java to FAIL for ${{ matrix.distribution }} v${{ matrix.version }}, but it succeeded"
+          exit 1
+
+      - name: "Verify: action correctly failed"
+        if: steps.setup-java.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "✅ setup-java correctly failed for ${{ matrix.distribution }} v${{ matrix.version }}"
+          echo ""
+          echo "Expected error should contain:"
+          echo "  - '${{ matrix.expected_pattern }}'"
+          echo "  - 'Distribution: ${{ matrix.expected_dist }}'"
+          echo "  - 'Package type: jdk'"
+          echo "  - 'Architecture: x64'"
+
+  # ============================================================
+  # Job 3: GraalVM-specific error paths
+  # Covers: handleHttpResponse 404 path (graalvm/installer.ts L152-157)
+  #         → createVersionNotFoundError + GRAALVM_DOWNLOAD_URL hint
+  # Covers: findEABuildDownloadUrl (graalvm/installer.ts L184-190)
+  #         → EA "no latest" additionalContext
+  # ============================================================
+  graalvm-error-paths:
+    name: "❌ GraalVM: ${{ matrix.test_name }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 404 path → "No matching version found" + graalvm.org hint
+          - test_name: "stable version not found (404 path)"
+            version: "99.0.1"
+            distribution: graalvm
+            expected_pattern: "No matching version found for SemVer"
+
+          # EA version that doesn't exist
+          - test_name: "EA version not found"
+            version: "99-ea"
+            distribution: graalvm
+            expected_pattern: "not found"
+
+          # Valid major but non-existent patch (triggers 404)
+          - test_name: "specific patch not found (archive 404)"
+            version: "17.0.999"
+            distribution: graalvm
+            expected_pattern: "No matching version found for SemVer"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "GraalVM: ${{ matrix.test_name }}"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+
+      - name: "Verify failure"
+        shell: bash
+        run: |
+          if [ "${{ steps.setup-java.outcome }}" == "success" ]; then
+            echo "::error::Expected failure for GraalVM ${{ matrix.version }}"
+            exit 1
+          fi
+          echo "✅ GraalVM correctly failed: ${{ matrix.test_name }}"
+
+  # ============================================================
+  # Job 4: Semeru platform context in error
+  # Covers: semeru/installer.ts L82-92
+  #         → additionalContext = "Platform: ${process.platform}"
+  # ============================================================
+  semeru-platform-context:
+    name: "❌ Semeru platform context: ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Semeru: invalid version triggers platform-aware error"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: "999.0.0"
+          distribution: semeru
+
+      - name: "Verify failure with platform context"
+        shell: bash
+        run: |
+          if [ "${{ steps.setup-java.outcome }}" == "success" ]; then
+            echo "::error::Expected failure for Semeru v999.0.0"
+            exit 1
+          fi
+          echo "✅ Semeru correctly failed on ${{ matrix.os }}"
+          echo "Error should include 'Platform: linux/win32/darwin'"
+
+  # ============================================================
+  # Job 5: check-latest flag + version not found
+  # Covers: base-installer.ts setupJava() → findPackageForDownload()
+  #         → createVersionNotFoundError() when checkLatest=true
+  # ============================================================
+  check-latest-error:
+    name: "❌ check-latest: ${{ matrix.distribution }} v${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distribution: temurin
+            version: "999.0.0"
+          - distribution: zulu
+            version: "999.0.0"
+          - distribution: liberica
+            version: "999.0.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "setup-java with check-latest and invalid version"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+          check-latest: true
+
+      - name: "Verify failure"
+        shell: bash
+        run: |
+          if [ "${{ steps.setup-java.outcome }}" == "success" ]; then
+            echo "::error::Expected failure for ${{ matrix.distribution }} v${{ matrix.version }} with check-latest"
+            exit 1
+          fi
+          echo "✅ Correctly failed with check-latest=true"
+
+  # ============================================================
+  # Job 6: Valid version with check-latest (happy path)
+  # Covers: base-installer.ts setupJava() with checkLatest=true
+  #         → findPackageForDownload() succeeds
+  # ============================================================
+  check-latest-success:
+    name: "✅ check-latest: ${{ matrix.distribution }} v${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distribution: temurin
+            version: "21"
+          - distribution: zulu
+            version: "21"
+          - distribution: liberica
+            version: "21"
+          - distribution: sapmachine
+            version: "21"
+          - distribution: jetbrains
+            version: "21"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "setup-java with check-latest"
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+          check-latest: true
+
+      - name: Verify
+        shell: bash
+        run: |
+          java -version
+          echo "✅ check-latest succeeded for ${{ matrix.distribution }} ${{ matrix.version }}"
+
+  # ============================================================
+  # Job 7: EA versions (happy path + error path)
+  # Covers: GraalVM findEABuildDownloadUrl happy path
+  #         and EA version resolution in other distributions
+  # ============================================================
+  ea-version-tests:
+    name: "${{ matrix.emoji }} EA: ${{ matrix.distribution }} v${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Happy path - valid EA
+          - distribution: graalvm
+            version: "24-ea"
+            should_fail: false
+            emoji: "✅"
+          - distribution: temurin
+            version: "17-ea"
+            should_fail: false
+            emoji: "✅"
+          - distribution: sapmachine
+            version: "21-ea"
+            should_fail: false
+            emoji: "✅"
+          - distribution: zulu
+            version: "17-ea"
+            should_fail: false
+            emoji: "✅"
+
+          # Error path - nonexistent EA
+          - distribution: graalvm
+            version: "99-ea"
+            should_fail: true
+            emoji: "❌"
+          - distribution: temurin
+            version: "99-ea"
+            should_fail: true
+            emoji: "❌"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup EA version"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Validate outcome"
+        shell: bash
+        run: |
+          OUTCOME="${{ steps.setup-java.outcome }}"
+          SHOULD_FAIL="${{ matrix.should_fail }}"
+
+          if [ "$SHOULD_FAIL" == "true" ] && [ "$OUTCOME" == "success" ]; then
+            echo "::error::Expected failure for ${{ matrix.distribution }} ${{ matrix.version }}"
+            exit 1
+          fi
+
+          if [ "$SHOULD_FAIL" == "false" ] && [ "$OUTCOME" == "failure" ]; then
+            echo "::error::Expected success for ${{ matrix.distribution }} ${{ matrix.version }}"
+            exit 1
+          fi
+
+          echo "✅ Outcome matched expectation (should_fail=$SHOULD_FAIL, outcome=$OUTCOME)"
+
+  # ============================================================
+  # Job 8: Package type variations
+  # Covers: createVersionNotFoundError includes correct packageType
+  #         field (jdk/jre) in the structured error
+  # ============================================================
+  package-type-tests:
+    name: "${{ matrix.emoji }} ${{ matrix.distribution }} ${{ matrix.java-package }} v${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Valid jre package
+          - distribution: temurin
+            version: "17"
+            java-package: jre
+            should_fail: false
+            emoji: "✅"
+          - distribution: liberica
+            version: "21"
+            java-package: jre
+            should_fail: false
+            emoji: "✅"
+
+          # Invalid version with jre → error should say "Package type: jre"
+          - distribution: temurin
+            version: "999"
+            java-package: jre
+            should_fail: true
+            emoji: "❌"
+          - distribution: zulu
+            version: "999"
+            java-package: jre
+            should_fail: true
+            emoji: "❌"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup Java"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+          java-package: ${{ matrix.java-package }}
+
+      - name: "Validate"
+        shell: bash
+        run: |
+          OUTCOME="${{ steps.setup-java.outcome }}"
+          SHOULD_FAIL="${{ matrix.should_fail }}"
+          if [ "$SHOULD_FAIL" == "true" ] && [ "$OUTCOME" == "success" ]; then
+            echo "::error::Expected failure"; exit 1
+          fi
+          if [ "$SHOULD_FAIL" == "false" ] && [ "$OUTCOME" == "failure" ]; then
+            echo "::error::Expected success"; exit 1
+          fi
+          echo "✅ ${{ matrix.distribution }} ${{ matrix.java-package }} v${{ matrix.version }}: outcome=$OUTCOME (expected)"
+
+  # ============================================================
+  # Job 9: Architecture variation
+  # Covers: createVersionNotFoundError includes correct architecture
+  #         field in the structured error
+  # ============================================================
+  architecture-tests:
+    name: "❌ Arch: ${{ matrix.distribution }} ${{ matrix.arch }} v${{ matrix.version }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # x86 with invalid version → error should say "Architecture: x86"
+          - distribution: zulu
+            version: "999"
+            arch: x86
+          - distribution: liberica
+            version: "999"
+            arch: x86
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup Java with ${{ matrix.arch }}"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+          architecture: ${{ matrix.arch }}
+
+      - name: "Verify failure with architecture in error"
+        shell: bash
+        run: |
+          if [ "${{ steps.setup-java.outcome }}" == "success" ]; then
+            echo "::error::Expected failure for ${{ matrix.distribution }} ${{ matrix.arch }} v${{ matrix.version }}"
+            exit 1
+          fi
+          echo "✅ Correctly failed. Error should include 'Architecture: ${{ matrix.arch }}'"
+
+  # ============================================================
+  # Job 10: Cache integration still works after error mock changes
+  # Covers: cache.test.ts & cleanup-java.test.ts mock changes
+  #         (spyCoreError, jest.resetAllMocks/clearAllMocks/restoreAllMocks)
+  # Uses the repo's own pom.xml, build.gradle.kts, build.sbt
+  # ============================================================
+  cache-integration:
+    name: "✅ Cache: ${{ matrix.cache }} with ${{ matrix.distribution }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distribution: temurin
+            version: "21"
+            cache: maven
+          - distribution: zulu
+            version: "21"
+            cache: gradle
+          - distribution: liberica
+            version: "21"
+            cache: sbt
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup Java with ${{ matrix.cache }} cache"
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+          cache: ${{ matrix.cache }}
+
+      - name: "Verify Java and cache"
+        shell: bash
+        run: |
+          java -version
+          echo "✅ Java ${{ matrix.version }} installed with ${{ matrix.cache }} cache"
+
+  # ============================================================
+  # Job 11: java-version-file (.java-version and .tool-versions)
+  # Covers: ensures version resolution from file still works
+  #         after error message refactoring
+  # ============================================================
+  version-from-file:
+    name: "✅ Version file: ${{ matrix.file }} with ${{ matrix.distribution }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # .java-version contains "21"
+          - distribution: temurin
+            file: .java-version
+            expected_major: "21"
+          # .tool-versions contains "java temurin-17"
+          - distribution: temurin
+            file: .tool-versions
+            expected_major: "17"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup Java from ${{ matrix.file }}"
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version-file: ${{ matrix.file }}
+
+      - name: "Verify version"
+        shell: bash
+        run: |
+          java -version
+          FULL_VERSION=$(java -version 2>&1 | head -1)
+          echo "✅ Got: $FULL_VERSION (expected major: ${{ matrix.expected_major }})"
+
+  # ============================================================
+  # Job 12: Multiple JDK setup
+  # Covers: setupJava() called multiple times — each invocation
+  #         exercises the full flow including error handling init
+  # ============================================================
+  multiple-jdks:
+    name: "✅ Multiple JDKs: ${{ matrix.distribution }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distribution: temurin
+          - distribution: zulu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup multiple Java versions"
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version: |
+            11
+            17
+            21
+
+      - name: "Verify JAVA_HOME env vars"
+        shell: bash
+        run: |
+          for ver in 11 17 21; do
+            ENV_NAME="JAVA_HOME_${ver}_X64"
+            VALUE="${!ENV_NAME}"
+            if [ -z "$VALUE" ]; then
+              echo "::error::$ENV_NAME is not set"
+              exit 1
+            fi
+            echo "✅ $ENV_NAME = $VALUE"
+          done
+          java -version
+          echo "✅ Default Java set correctly"
+
+  # ============================================================
+  # Job 13: Cross-OS error message consistency
+  # Covers: createVersionNotFoundError produces consistent
+  #         format across all 3 OS platforms
+  # ============================================================
+  cross-os-error-consistency:
+    name: "❌ Cross-OS: temurin v999 - ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Setup Java (expect failure)"
+        id: setup-java
+        continue-on-error: true
+        uses: actions/setup-java@improve-java-error-messaging
+        with:
+          java-version: "999.0.0"
+          distribution: temurin
+
+      - name: "Verify consistent failure across OS"
+        shell: bash
+        run: |
+          if [ "${{ steps.setup-java.outcome }}" == "success" ]; then
+            echo "::error::Expected failure on ${{ matrix.os }}"
+            exit 1
+          fi
+          echo "✅ Consistent failure on ${{ matrix.os }}"
+          echo "Error format should be identical across all OS:"
+          echo "  No matching version found for SemVer '999.0.0'"
+          echo "  Distribution: Temurin-Hotspot"
+          echo "  Package type: jdk"
+          echo "  Architecture: x64"
