@@ -1,0 +1,85 @@
+name: Replicate sudo Java env issue (#997)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # ── Ubuntu: primary repro (sudo resets PATH/JAVA_HOME) ──────────────────────
+  ubuntu-sudo-repro:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java 25 (liberica) via setup-java@v5
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+
+      - name: ✅ Java version WITHOUT sudo (should be 25)
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "PATH=$PATH"
+          java -version
+
+      - name: ❌ Java version WITH sudo (demonstrates the bug — will show system Java)
+        run: |
+          echo "--- sudo java (env_reset drops JAVA_HOME/PATH) ---"
+          sudo java -version
+
+      - name: Show what Java sudo finds (confirm it is the system default)
+        run: |
+          sudo which java
+          sudo update-alternatives --display java || true
+
+      - name: Workaround 1 — sudo -E (preserve environment)
+        run: |
+          echo "--- sudo -E java (should be 25) ---"
+          sudo -E java -version
+
+      - name: Workaround 2 — explicit env passthrough
+        run: |
+          echo "--- sudo JAVA_HOME + PATH passthrough (should be 25) ---"
+          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version
+
+      - name: Workaround 3 — full path via JAVA_HOME
+        run: |
+          echo "--- sudo full path (should be 25) ---"
+          sudo "$JAVA_HOME/bin/java" -version
+
+  # ── macOS: same behaviour on macOS runners ───────────────────────────────────
+  macos-sudo-repro:
+    runs-on: macos-latest
+    steps:
+      - name: Setup Java 25 (liberica) via setup-java@v5
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+
+      - name: ✅ Java version WITHOUT sudo (should be 25)
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+
+      - name: ❌ Java version WITH sudo (demonstrates the bug — will show system Java)
+        run: |
+          echo "--- sudo java (env_reset drops JAVA_HOME/PATH) ---"
+          sudo java -version
+
+      - name: Workaround 1 — sudo -E
+        run: sudo -E java -version
+
+      - name: Workaround 2 — full path via JAVA_HOME
+        run: sudo "$JAVA_HOME/bin/java" -version
+
+  # ── Windows: NOT affected (included as a control/sanity check) ───────────────
+  windows-control:
+    runs-on: windows-latest
+    steps:
+      - name: Setup Java 25 (liberica) via setup-java@v5
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+
+      - name: ✅ Java version (should be 25 — Windows is unaffected)
+        run: java -version
