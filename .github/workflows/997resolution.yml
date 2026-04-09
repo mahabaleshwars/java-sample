@@ -1,0 +1,91 @@
+name: Test sudo Java Workarounds (Issue #997)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # ── Workaround 1: sudo -E (preserve environment) ────────────────────────────
+  workaround-1-sudo-preserve-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+
+      - name: Baseline — plain sudo (should show system Java, NOT 25)
+        run: |
+          echo "=== Without fix (plain sudo) ==="
+          sudo java -version
+
+      - name: Fix — sudo -E preserves JAVA_HOME and PATH
+        run: |
+          echo "=== With sudo -E (should be Java 25) ==="
+          sudo -E java -version
+
+  # ── Workaround 2: Explicit env passthrough ───────────────────────────────────
+  workaround-2-explicit-passthrough:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+
+      - name: Baseline — plain sudo (should show system Java, NOT 25)
+        run: |
+          echo "=== Without fix (plain sudo) ==="
+          sudo java -version
+
+      - name: Fix — explicit JAVA_HOME and PATH passthrough
+        run: |
+          echo "=== With explicit env passthrough (should be Java 25) ==="
+          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version
+
+  # ── Workaround 3: Full path via $JAVA_HOME ───────────────────────────────────
+  workaround-3-full-path:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+
+      - name: Baseline — plain sudo (should show system Java, NOT 25)
+        run: |
+          echo "=== Without fix (plain sudo) ==="
+          sudo java -version
+
+      - name: Fix — use full path via $JAVA_HOME
+        run: |
+          echo "=== With full path (should be Java 25) ==="
+          sudo "$JAVA_HOME/bin/java" -version
+
+  # ── Workaround 4: Avoid sudo for Java steps (preferred) ──────────────────────
+  workaround-4-avoid-sudo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'liberica'
+
+      - name: Baseline — plain sudo (should show system Java, NOT 25)
+        run: |
+          echo "=== Without fix (plain sudo) ==="
+          sudo java -version
+
+      - name: Fix — run Java without sudo (no privilege escalation needed)
+        run: |
+          echo "=== Without sudo entirely (should be Java 25) ==="
+          java -version
+
+      - name: Separate step for sudo-only system task (apt-get, etc.)
+        run: |
+          echo "=== sudo only for system commands, not Java ==="
+          sudo apt-get install -y curl   # sudo used only where truly needed
+          java -version                  # Java runs without sudo
