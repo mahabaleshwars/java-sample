@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ── Workaround 1: sudo -E (preserve environment) ────────────────────────────
-  workaround-1-sudo-preserve-env:
+  # ── Workaround 1: sudo -E — FAILS on GitHub Actions hosted runners ───────────
+  workaround-1-sudo-E-FAILS:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Java 25
@@ -14,18 +14,21 @@ jobs:
           java-version: '25'
           distribution: 'liberica'
 
-      - name: Baseline — plain sudo (should show system Java, NOT 25)
+      - name: Baseline — plain sudo (shows system Java 17)
         run: |
-          echo "=== Without fix (plain sudo) ==="
+          echo "=== plain sudo (baseline) ==="
           sudo java -version
 
-      - name: Fix — sudo -E preserves JAVA_HOME and PATH
+      - name: sudo -E — does NOT work on GitHub Actions (JAVA_HOME not in sudo env)
         run: |
-          echo "=== With sudo -E (should be Java 25) ==="
+          echo "=== sudo -E — expected Java 25, actual result ==="
+          echo "JAVA_HOME in shell: $JAVA_HOME"
           sudo -E java -version
+          echo "NOTE: sudo -E does not work here because JAVA_HOME is set via"
+          echo "GITHUB_ENV (workflow env file), not exported into the sudo environment."
 
-  # ── Workaround 2: Explicit env passthrough ───────────────────────────────────
-  workaround-2-explicit-passthrough:
+  # ── Workaround 2: Explicit passthrough — FAILS on GitHub Actions ─────────────
+  workaround-2-explicit-passthrough-FAILS:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Java 25
@@ -34,18 +37,19 @@ jobs:
           java-version: '25'
           distribution: 'liberica'
 
-      - name: Baseline — plain sudo (should show system Java, NOT 25)
+      - name: Baseline — plain sudo (shows system Java 17)
         run: |
-          echo "=== Without fix (plain sudo) ==="
+          echo "=== plain sudo (baseline) ==="
           sudo java -version
 
-      - name: Fix — explicit JAVA_HOME and PATH passthrough
+      - name: Explicit passthrough — does NOT work reliably on GitHub Actions
         run: |
-          echo "=== With explicit env passthrough (should be Java 25) ==="
+          echo "=== sudo JAVA_HOME/PATH passthrough — expected Java 25, actual result ==="
+          echo "JAVA_HOME in shell: $JAVA_HOME"
           sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version
 
-  # ── Workaround 3: Full path via $JAVA_HOME ───────────────────────────────────
-  workaround-3-full-path:
+  # ── Workaround 3: Full path via $JAVA_HOME — WORKS ✅ ────────────────────────
+  workaround-3-full-path-WORKS:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Java 25
@@ -54,18 +58,19 @@ jobs:
           java-version: '25'
           distribution: 'liberica'
 
-      - name: Baseline — plain sudo (should show system Java, NOT 25)
+      - name: Baseline — plain sudo (shows system Java 17)
         run: |
-          echo "=== Without fix (plain sudo) ==="
+          echo "=== plain sudo (baseline) ==="
           sudo java -version
 
-      - name: Fix — use full path via $JAVA_HOME
+      - name: Fix — full path via $JAVA_HOME (bypasses PATH lookup entirely)
         run: |
-          echo "=== With full path (should be Java 25) ==="
+          echo "=== sudo full path — should be Java 25 ==="
+          echo "JAVA_HOME in shell: $JAVA_HOME"
           sudo "$JAVA_HOME/bin/java" -version
 
-  # ── Workaround 4: Avoid sudo for Java steps (preferred) ──────────────────────
-  workaround-4-avoid-sudo:
+  # ── Workaround 4: Avoid sudo for Java steps — WORKS ✅ (preferred) ───────────
+  workaround-4-avoid-sudo-WORKS:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Java 25
@@ -74,18 +79,18 @@ jobs:
           java-version: '25'
           distribution: 'liberica'
 
-      - name: Baseline — plain sudo (should show system Java, NOT 25)
+      - name: Baseline — plain sudo (shows system Java 17)
         run: |
-          echo "=== Without fix (plain sudo) ==="
+          echo "=== plain sudo (baseline) ==="
           sudo java -version
 
-      - name: Fix — run Java without sudo (no privilege escalation needed)
+      - name: Fix — Java runs without sudo (should be Java 25)
         run: |
-          echo "=== Without sudo entirely (should be Java 25) ==="
+          echo "=== no sudo — should be Java 25 ==="
           java -version
 
-      - name: Separate step for sudo-only system task (apt-get, etc.)
+      - name: sudo only for system-level commands, Java without sudo
         run: |
-          echo "=== sudo only for system commands, not Java ==="
-          sudo apt-get install -y curl   # sudo used only where truly needed
-          java -version                  # Java runs without sudo
+          echo "=== sudo only for apt, Java without sudo ==="
+          sudo apt-get install -y curl
+          java -version
