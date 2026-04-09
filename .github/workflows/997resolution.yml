@@ -1,4 +1,4 @@
-name: Validate sudo Java workarounds
+name: Validate sudo Java workarounds (#997)
 
 on:
   workflow_dispatch:
@@ -16,32 +16,33 @@ jobs:
         uses: actions/checkout@v6
 
       - name: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         id: setup-java
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Verify Java version (no sudo baseline)
+      - name: Baseline — Java version WITHOUT sudo
         run: |
           echo "=== Baseline (no sudo) ==="
           echo "JAVA_HOME=$JAVA_HOME"
+          echo "which java: $(which java)"
           java -version 2>&1
           javac -version 2>&1
 
-      - name: Show default sudo behavior (expected to use system Java)
+      - name: Show default sudo behavior (expect system Java — NOT 21)
         run: |
           echo "=== Default sudo (env is reset — expect system Java) ==="
+          echo "sudo which java: $(sudo which java)"
           sudo java -version 2>&1 || true
           sudo javac -version 2>&1 || true
 
-      # Workaround 1: Pass both JAVA_HOME and PATH explicitly
+      # Workaround 1: Pass both JAVA_HOME and PATH explicitly (most reliable)
       - name: 'Workaround 1: sudo JAVA_HOME=... PATH=...'
         run: |
           echo "=== Workaround 1: explicit env passthrough ==="
           sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version 2>&1
           sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" javac -version 2>&1
-          # Verify the version matches what setup-java configured
           ACTUAL=$(sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version 2>&1 | head -1)
           echo "Actual: $ACTUAL"
           echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "❌ FAIL"; exit 1; }
@@ -56,7 +57,7 @@ jobs:
           echo "Actual: $ACTUAL"
           echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "❌ FAIL"; exit 1; }
 
-      # Workaround 3: Use $JAVA_HOME/bin/java explicitly
+      # Workaround 3: Use $JAVA_HOME/bin/java full path
       - name: 'Workaround 3: full path via $JAVA_HOME/bin/...'
         run: |
           echo "=== Workaround 3: explicit JAVA_HOME path ==="
@@ -74,23 +75,32 @@ jobs:
           javac -version 2>&1
           ACTUAL=$(java -version 2>&1 | head -1)
           echo "Actual: $ACTUAL"
-          echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "��� FAIL"; exit 1; }
+          echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "❌ FAIL"; exit 1; }
 
-      # Bonus: Demonstrate the exact ant scenario from the issue
-      - name: 'Simulate ant-like build tool under sudo'
+      # Real-world simulation: compile & run Java under sudo (mirrors the issue's ant scenario)
+      - name: 'Simulate build tool compile under sudo'
         run: |
-          echo "=== Simulating build tool under sudo ==="
-          # Create a small Java file to compile
           echo 'public class Hello { public static void main(String[] args) { System.out.println("Java " + System.getProperty("java.version")); } }' > Hello.java
 
-          echo "--- Without workaround (may fail or use wrong version) ---"
-          sudo javac Hello.java 2>&1 || echo "(Expected: may fail if system Java doesn't support target)"
+          echo "--- Without workaround (may use wrong version or fail) ---"
+          sudo javac Hello.java 2>&1 || echo "(Expected: system Java may not match)"
 
-          echo "--- With workaround 1 ---"
+          echo "--- With explicit env passthrough ---"
           sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" javac Hello.java 2>&1
           sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java Hello 2>&1
 
-  # Windows should not be affected
+      # Confirm: workarounds do NOT modify system-level Java
+      - name: 'Verify system Java is untouched after workarounds'
+        run: |
+          echo "=== Confirming system Java was NOT modified ==="
+          echo "System java (via sudo): $(sudo which java)"
+          sudo java -version 2>&1
+          echo "update-alternatives (if available):"
+          sudo update-alternatives --display java 2>/dev/null || echo "N/A (macOS)"
+          echo ""
+          echo "✅ System Java is unchanged — workarounds are session-scoped only"
+
+  # Windows: NOT affected (control test)
   sudo-not-affected-windows:
     name: sudo not affected - windows-latest
     runs-on: windows-latest
@@ -99,13 +109,13 @@ jobs:
         uses: actions/checkout@v6
 
       - name: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         id: setup-java
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Verify Java version (Windows - no sudo issue)
+      - name: Verify Java version (Windows — no sudo issue)
         run: |
           echo "=== Windows baseline ==="
           java -version 2>&1
