@@ -1,123 +1,89 @@
-name: Validate sudo Java workarounds (#997)
+name: "Repro Issue 997 - sudo uses wrong JDK"
 
 on:
   workflow_dispatch:
 
 jobs:
-  sudo-java-workarounds:
-    name: sudo workarounds - ${{ matrix.os }}
+  repro-sudo-java-version:
+    name: "${{ matrix.distribution }} JDK 25 sudo test - ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04]
+        distribution: ['liberica', 'temurin', 'zulu']
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: setup-java
+      - name: Setup Java 25
         uses: actions/setup-java@v5
         id: setup-java
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '25'
+          distribution: ${{ matrix.distribution }}
 
-      - name: Baseline — Java version WITHOUT sudo
+      - name: "Step 1: Verify Java 25 without sudo (baseline)"
         run: |
-          echo "=== Baseline (no sudo) ==="
+          echo "=== Without sudo ==="
           echo "JAVA_HOME=$JAVA_HOME"
           echo "which java: $(which java)"
-          java -version 2>&1
-          javac -version 2>&1
+          java -version
+          javac -version
 
-      - name: Show default sudo behavior (expect system Java — NOT 21)
+      - name: "Step 2: Verify Java version with sudo (expect bug)"
         run: |
-          echo "=== Default sudo (env is reset — expect system Java) ==="
-          echo "sudo which java: $(sudo which java)"
-          sudo java -version 2>&1 || true
-          sudo javac -version 2>&1 || true
+          echo "=== With sudo ==="
+          echo "Sudo JAVA_HOME: $(sudo bash -c 'echo $JAVA_HOME')"
+          echo "Sudo which java: $(sudo which java)"
+          sudo java -version
+          sudo javac -version
 
-      # Workaround 1: Pass both JAVA_HOME and PATH explicitly (most reliable)
-      - name: 'Workaround 1: sudo JAVA_HOME=... PATH=...'
+      - name: "Step 3: Compare user vs sudo environments"
         run: |
-          echo "=== Workaround 1: explicit env passthrough ==="
-          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version 2>&1
-          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" javac -version 2>&1
-          ACTUAL=$(sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version 2>&1 | head -1)
-          echo "Actual: $ACTUAL"
-          echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "❌ FAIL"; exit 1; }
-
-      # Workaround 2: sudo -E env PATH="$PATH"
-      - name: 'Workaround 2: sudo -E env PATH=...'
-        run: |
-          echo "=== Workaround 2: sudo -E with explicit PATH ==="
-          sudo -E env PATH="$PATH" java -version 2>&1
-          sudo -E env PATH="$PATH" javac -version 2>&1
-          ACTUAL=$(sudo -E env PATH="$PATH" java -version 2>&1 | head -1)
-          echo "Actual: $ACTUAL"
-          echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "❌ FAIL"; exit 1; }
-
-      # Workaround 3: Use $JAVA_HOME/bin/java full path
-      - name: 'Workaround 3: full path via $JAVA_HOME/bin/...'
-        run: |
-          echo "=== Workaround 3: explicit JAVA_HOME path ==="
-          sudo "$JAVA_HOME/bin/java" -version 2>&1
-          sudo "$JAVA_HOME/bin/javac" -version 2>&1
-          ACTUAL=$(sudo "$JAVA_HOME/bin/java" -version 2>&1 | head -1)
-          echo "Actual: $ACTUAL"
-          echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "❌ FAIL"; exit 1; }
-
-      # Workaround 4: Avoid sudo entirely (preferred)
-      - name: 'Workaround 4: no sudo (preferred)'
-        run: |
-          echo "=== Workaround 4: avoid sudo ==="
-          java -version 2>&1
-          javac -version 2>&1
-          ACTUAL=$(java -version 2>&1 | head -1)
-          echo "Actual: $ACTUAL"
-          echo "$ACTUAL" | grep -q "21" && echo "✅ PASS" || { echo "❌ FAIL"; exit 1; }
-
-      # Real-world simulation: compile & run Java under sudo (mirrors the issue's ant scenario)
-      - name: 'Simulate build tool compile under sudo'
-        run: |
-          echo 'public class Hello { public static void main(String[] args) { System.out.println("Java " + System.getProperty("java.version")); } }' > Hello.java
-
-          echo "--- Without workaround (may use wrong version or fail) ---"
-          sudo javac Hello.java 2>&1 || echo "(Expected: system Java may not match)"
-
-          echo "--- With explicit env passthrough ---"
-          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" javac Hello.java 2>&1
-          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java Hello 2>&1
-
-      # Confirm: workarounds do NOT modify system-level Java
-      - name: 'Verify system Java is untouched after workarounds'
-        run: |
-          echo "=== Confirming system Java was NOT modified ==="
-          echo "System java (via sudo): $(sudo which java)"
-          sudo java -version 2>&1
-          echo "update-alternatives (if available):"
-          sudo update-alternatives --display java 2>/dev/null || echo "N/A (macOS)"
+          echo "=== Environment Comparison ==="
+          echo "User JAVA_HOME : $JAVA_HOME"
+          echo "Sudo JAVA_HOME : $(sudo bash -c 'echo $JAVA_HOME')"
           echo ""
-          echo "✅ System Java is unchanged — workarounds are session-scoped only"
+          echo "User which java: $(which java)"
+          echo "Sudo which java: $(sudo which java)"
+          echo ""
+          echo "User PATH: $PATH"
+          echo "Sudo PATH: $(sudo bash -c 'echo $PATH')"
 
-  # Windows: NOT affected (control test)
-  sudo-not-affected-windows:
-    name: sudo not affected - windows-latest
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: setup-java
-        uses: actions/setup-java@v5
-        id: setup-java
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Verify Java version (Windows — no sudo issue)
+      - name: "Step 4: Reproduce javac target release failure"
         run: |
-          echo "=== Windows baseline ==="
-          java -version 2>&1
-          javac -version 2>&1
-        shell: bash
+          echo "=== Simulating: sudo javac with target 25 ==="
+          USER_JAVAC_VERSION=$(javac -version 2>&1)
+          SUDO_JAVAC_VERSION=$(sudo javac -version 2>&1)
+          echo "User javac: $USER_JAVAC_VERSION"
+          echo "Sudo javac: $SUDO_JAVAC_VERSION"
+          if echo "$SUDO_JAVAC_VERSION" | grep -q "25"; then
+            echo "✅ sudo javac is version 25"
+          else
+            echo "❌ BUG REPRODUCED: sudo javac is NOT version 25"
+            echo "   sudo sees: $SUDO_JAVAC_VERSION"
+            echo "   user sees: $USER_JAVAC_VERSION"
+            exit 1
+          fi
+
+      - name: "Step 5: Reproduce with sudo mvn compile"
+        run: |
+          echo "=== Simulating: sudo mvn compile ==="
+          echo "Without sudo (should work):"
+          mvn compile -q -B || echo "mvn compile failed (may need deps, that is ok)"
+          echo ""
+          echo "With sudo (should show wrong JDK):"
+          sudo mvn compile -q -B 2>&1 || echo "sudo mvn compile failed as expected (wrong JDK or missing mvn)"
+
+      - name: "Step 6: Workaround - sudo -E preserves env"
+        run: |
+          echo "=== Workaround 1: sudo -E (preserve environment) ==="
+          sudo -E java -version
+          sudo -E javac -version
+
+      - name: "Step 7: Workaround - explicit env passthrough"
+        run: |
+          echo "=== Workaround 2: explicit JAVA_HOME and PATH ==="
+          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" java -version
+          sudo JAVA_HOME="$JAVA_HOME" PATH="$PATH" javac -version
