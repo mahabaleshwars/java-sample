@@ -1,0 +1,158 @@
+name: "Verify Issue 997 workarounds"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify-workarounds:
+    name: "${{ matrix.distribution }} JDK 25 sudo workarounds - ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04]
+        distribution: ['liberica', 'temurin', 'zulu']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          java-version: '25'
+          distribution: ${{ matrix.distribution }}
+
+      # -------------------------------------------------------------------
+      # Baseline: show the bug (so this workflow also proves the root cause)
+      # -------------------------------------------------------------------
+      - name: "Baseline: no-sudo vs sudo (shows the fallback to Temurin 17)"
+        run: |
+          echo "=== No sudo ==="
+          echo "JAVA_HOME=$JAVA_HOME"
+          which java
+          java -version
+          echo ""
+          echo "=== Plain sudo (expected: shows runner default, typically Temurin 17) ==="
+          echo "Sudo JAVA_HOME: $(sudo bash -c 'echo $JAVA_HOME')"
+          sudo which java
+          sudo java -version
+          sudo javac -version
+
+      # -------------------------------------------------------------------
+      # Workaround 1: sudo --preserve-env (simplest)
+      # -------------------------------------------------------------------
+      - name: "Workaround 1: sudo --preserve-env=JAVA_HOME,PATH"
+        run: |
+          echo "=== sudo --preserve-env=JAVA_HOME,PATH ==="
+          sudo --preserve-env=JAVA_HOME,PATH java -version
+          sudo --preserve-env=JAVA_HOME,PATH javac -version
+
+          VER=$(sudo --preserve-env=JAVA_HOME,PATH javac -version 2>&1)
+          echo "sudo javac -> $VER"
+          echo "$VER" | grep -q " 25" && echo "✅ Workaround 1 OK" || { echo "❌ Workaround 1 failed"; exit 1; }
+
+      - name: "Workaround 1b: sudo -E (preserve whole environment)"
+        run: |
+          echo "=== sudo -E ==="
+          sudo -E java -version
+          sudo -E javac -version
+
+          VER=$(sudo -E javac -version 2>&1)
+          echo "$VER" | grep -q " 25" && echo "✅ Workaround 1b OK" || { echo "❌ Workaround 1b failed"; exit 1; }
+
+      # -------------------------------------------------------------------
+      # Workaround 2: pass JAVA_HOME / PATH explicitly via `sudo env ...`
+      # -------------------------------------------------------------------
+      - name: "Workaround 2: explicit env passthrough"
+        run: |
+          echo "=== sudo env JAVA_HOME=... PATH=... ==="
+          sudo env "JAVA_HOME=$JAVA_HOME" "PATH=$JAVA_HOME/bin:$PATH" java -version
+          sudo env "JAVA_HOME=$JAVA_HOME" "PATH=$JAVA_HOME/bin:$PATH" javac -version
+
+          VER=$(sudo env "JAVA_HOME=$JAVA_HOME" "PATH=$JAVA_HOME/bin:$PATH" javac -version 2>&1)
+          echo "$VER" | grep -q " 25" && echo "✅ Workaround 2 OK" || { echo "❌ Workaround 2 failed"; exit 1; }
+
+      # -------------------------------------------------------------------
+      # Workaround 3: relax sudoers secure_path + env_keep once for the job
+      # -------------------------------------------------------------------
+      - name: "Workaround 3: relax secure_path + env_keep for JAVA_HOME"
+        run: |
+          echo "=== Patching sudoers ==="
+          sudo tee /etc/sudoers.d/keep-java > /dev/null <<EOF
+          Defaults env_keep += "JAVA_HOME"
+          Defaults secure_path="$JAVA_HOME/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          EOF
+          sudo chmod 440 /etc/sudoers.d/keep-java
+
+          echo "=== Plain sudo now respects setup-java JDK ==="
+          sudo bash -c 'echo JAVA_HOME=$JAVA_HOME; which java; java -version; javac -version'
+
+          VER=$(sudo javac -version 2>&1)
+          echo "$VER" | grep -q " 25" && echo "✅ Workaround 3 OK" || { echo "❌ Workaround 3 failed"; exit 1; }
+
+      # After Workaround 3, plain `sudo` picks up JDK 25 for the rest of the job.
+      # Remove it before Workaround 5 so that test is meaningful in isolation.
+      - name: "Reset sudoers override"
+        run: sudo rm -f /etc/sudoers.d/keep-java
+
+      # -------------------------------------------------------------------
+      # Workaround 4: avoid sudo entirely inside the build tool
+      # (Demonstration only — shows that without sudo, JDK 25 is used.)
+      # -------------------------------------------------------------------
+      - name: "Workaround 4: do not use sudo inside the build (demonstration)"
+        run: |
+          echo "=== Running javac WITHOUT sudo ==="
+          javac -version
+          VER=$(javac -version 2>&1)
+          echo "$VER" | grep -q " 25" && echo "✅ Workaround 4 OK (no sudo = correct JDK)" || { echo "❌ Workaround 4 failed"; exit 1; }
+
+      # -------------------------------------------------------------------
+      # Workaround 5: point the sudo'd process at JAVA_HOME_25_X64
+      # (env var the runner image pre-exposes; survives sudo because sudo
+      #  re-reads /etc/environment).
+      # -------------------------------------------------------------------
+      - name: "Workaround 5: use JAVA_HOME_25_X64 inside sudo"
+        run: |
+          echo "=== JAVA_HOME_25_X64 as seen by user ==="
+          echo "JAVA_HOME_25_X64=$JAVA_HOME_25_X64"
+          echo ""
+          echo "=== sudo picks it up from /etc/environment ==="
+          sudo bash -c 'echo JAVA_HOME_25_X64=$JAVA_HOME_25_X64'
+          echo ""
+          echo "=== Use it for the sudo'd java/javac ==="
+          sudo bash -c '
+            export JAVA_HOME="$JAVA_HOME_25_X64"
+            export PATH="$JAVA_HOME/bin:$PATH"
+            echo JAVA_HOME=$JAVA_HOME
+            which java
+            java -version
+            javac -version
+          '
+
+          VER=$(sudo bash -c 'export JAVA_HOME="$JAVA_HOME_25_X64"; export PATH="$JAVA_HOME/bin:$PATH"; javac -version' 2>&1)
+          echo "$VER" | grep -q " 25" && echo "✅ Workaround 5 OK" || { echo "❌ Workaround 5 failed"; exit 1; }
+
+      # -------------------------------------------------------------------
+      # Applied to the original ant/makeself scenario from issue #997
+      # -------------------------------------------------------------------
+      - name: "Applied example: ant invoked under sudo with workaround 1"
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ant
+
+          cat > build.xml <<'XML'
+          <project name="jdk-check" default="show">
+            <target name="show">
+              <echo message="ant java.version = ${java.version}"/>
+              <echo message="ant java.home    = ${java.home}"/>
+            </target>
+          </project>
+          XML
+
+          echo "=== Plain sudo ant (buggy) ==="
+          sudo ant -q show || true
+
+          echo ""
+          echo "=== sudo --preserve-env=JAVA_HOME,PATH ant (fixed) ==="
+          sudo --preserve-env=JAVA_HOME,PATH ant -q show
