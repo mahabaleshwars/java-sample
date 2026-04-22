@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="java-sample" default="help" basedir=".">
+
+    <!-- ========= Properties ========= -->
+    <property name="out.dir" value="out"/>
+    <property name="target.arch" value="x86_64"/>
+    <property name="testng.pattern" value="**/*Test*"/>
+
+    <!-- ========= Init ========= -->
+    <target name="init">
+        <mkdir dir="${out.dir}"/>
+    </target>
+
+    <!-- ========= Help ========= -->
+    <target name="help">
+        <echo message="Available targets: makeself, pkgbuild, nsis, testng"/>
+        <echo message="Example: ant -Dtarget.arch=aarch64 makeself"/>
+    </target>
+
+    <!-- ========= Linux artifact ========= -->
+    <target name="makeself" depends="init">
+        <echo message="Building Linux .run for arch=${target.arch} (placeholder)"/>
+        <echo file="${out.dir}/qz-tray-${target.arch}.run">placeholder linux run artifact (${target.arch})</echo>
+    </target>
+
+    <!-- ========= macOS artifact ========= -->
+    <target name="pkgbuild" depends="init">
+        <echo message="Building macOS .pkg for arch=${target.arch} (placeholder)"/>
+        <echo file="${out.dir}/qz-tray-${target.arch}.pkg">placeholder macos pkg artifact (${target.arch})</echo>
+    </target>
+
+    <!-- ========= Windows artifact ========= -->
+    <target name="nsis" depends="init">
+        <echo message="Building Windows .exe for arch=${target.arch} (placeholder)"/>
+        <echo file="${out.dir}/qz-tray-${target.arch}.exe">placeholder windows exe artifact (${target.arch})</echo>
+    </target>
+
+    <!-- ========= Tests ========= -->
+    <target name="testng" depends="init">
+        <echo message="Running tests with pattern=${testng.pattern} (placeholder)"/>
+    </target>
+
+</project>
