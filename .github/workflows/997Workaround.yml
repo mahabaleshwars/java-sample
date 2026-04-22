@@ -130,7 +130,7 @@ jobs:
       # ant's launcher honours $JAVA_HOME, so preserve-env is enough here —
       # no PATH trap because ant doesn't look up `java` on PATH.
       # -------------------------------------------------------------------
-      - name: "Applied example: sudo ant with --preserve-env=JAVA_HOME"
+      - name: "Applied example: sudo ant picks up setup-java JDK"
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends ant
@@ -144,12 +144,29 @@ jobs:
           </project>
           XML
 
-          echo "=== Plain sudo ant (buggy) ==="
+          echo "=== Plain sudo ant (buggy: Debian ant wrapper overrides JAVA_HOME) ==="
           sudo ant -q show || true
 
           echo ""
-          echo "=== sudo --preserve-env=JAVA_HOME ant (fixed) ==="
-          VER=$(sudo --preserve-env=JAVA_HOME ant -q show 2>&1 | tee /dev/stderr)
-          echo "$VER" | grep -Eq "java.version = 25" \
-            && echo "✅ ant picks up JDK 25 under sudo" \
-            || { echo "❌ ant still wrong under sudo"; exit 1; }
+          echo "=== Fix A: sudo env JAVACMD=\$JAVA_HOME/bin/java ant ==="
+          OUT=$(sudo env \
+                 "JAVA_HOME=$JAVA_HOME" \
+                 "JAVACMD=$JAVA_HOME/bin/java" \
+                 ant -q show 2>&1)
+          echo "$OUT"
+          echo "$OUT" | grep -Eq "java.version = 25" \
+            && echo "✅ Fix A OK" \
+            || { echo "❌ Fix A failed"; exit 1; }
+
+          echo ""
+          echo "=== Fix B: sudo bash -c 'export JAVA_HOME=...; export PATH=...; ant' ==="
+          OUT=$(sudo bash -c "
+            export JAVA_HOME='$JAVA_HOME'
+            export PATH='$JAVA_HOME/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+            export JAVACMD='$JAVA_HOME/bin/java'
+            ant -q show
+          " 2>&1)
+          echo "$OUT"
+          echo "$OUT" | grep -Eq "java.version = 25" \
+            && echo "✅ Fix B OK" \
+            || { echo "❌ Fix B failed"; exit 1; }
