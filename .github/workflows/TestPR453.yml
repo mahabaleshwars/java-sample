@@ -1,0 +1,360 @@
+name: Test PR 453 - Maven Wrapper Cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-wrapper-cache-basic:
+    name: Basic Maven Wrapper Cache Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17 (PR #453 branch)
+        uses: actions/setup-java@main
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Verify cache directories before build
+        run: |
+          echo "=== Checking cache directories BEFORE build ==="
+          echo "Maven local repository:"
+          ls -la ~/.m2/repository 2>/dev/null || echo "  ❌ Not yet created"
+          echo ""
+          echo "Maven wrapper distributions:"
+          ls -la ~/.m2/wrapper/dists 2>/dev/null || echo "  ❌ Not yet created"
+      
+      - name: First build with Maven Wrapper
+        run: |
+          echo "🔨 Building with Maven Wrapper (first time - should download wrapper)"
+          time ./mvnw clean package -DskipTests
+      
+      - name: Verify cache directories after build
+        run: |
+          echo "=== Checking cache directories AFTER build ==="
+          echo "Maven local repository size:"
+          du -sh ~/.m2/repository
+          echo ""
+          echo "Maven wrapper distributions size:"
+          du -sh ~/.m2/wrapper/dists
+          echo ""
+          echo "Wrapper contents:"
+          ls -lah ~/.m2/wrapper/dists/
+      
+      - name: Second build (should use cached wrapper)
+        run: |
+          echo "🔨 Building again (should use cached wrapper)"
+          time ./mvnw clean package -DskipTests
+  
+  test-cache-dependency-path-single:
+    name: Test cache-dependency-path with pom.xml only
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17 with cache-dependency-path
+        uses: actions/setup-java@main
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: 'pom.xml'
+      
+      - name: Display configuration
+        run: |
+          echo "=== Configuration ==="
+          echo "Cache dependency path: pom.xml"
+          echo "This will cache based ONLY on pom.xml changes"
+          echo ""
+          cat pom.xml
+      
+      - name: Build with wrapper
+        run: ./mvnw clean install
+      
+      - name: Verify wrapper was cached
+        run: |
+          if [ -d ~/.m2/wrapper/dists ]; then
+            echo "✅ Wrapper distributions directory exists"
+            ls -lah ~/.m2/wrapper/dists/
+          else
+            echo "❌ Wrapper distributions NOT cached"
+          fi
+  
+  test-cache-dependency-path-with-wrapper:
+    name: Test cache-dependency-path with pom.xml AND wrapper properties
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17 with multiple cache-dependency-paths
+        uses: actions/setup-java@main
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            **/pom.xml
+            .mvn/wrapper/maven-wrapper.properties
+      
+      - name: Display tracked files
+        run: |
+          echo "=== Files being tracked for cache invalidation ==="
+          echo "1. All pom.xml files:"
+          find . -name "pom.xml" -type f
+          echo ""
+          echo "2. Maven wrapper properties:"
+          if [ -f .mvn/wrapper/maven-wrapper.properties ]; then
+            cat .mvn/wrapper/maven-wrapper.properties
+          else
+            echo "  ⚠️  .mvn/wrapper/maven-wrapper.properties NOT FOUND"
+            echo "  Creating it for this test..."
+            mkdir -p .mvn/wrapper
+            echo "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.6/apache-maven-3.9.6-bin.zip" > .mvn/wrapper/maven-wrapper.properties
+            echo "wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar" >> .mvn/wrapper/maven-wrapper.properties
+            cat .mvn/wrapper/maven-wrapper.properties
+          fi
+      
+      - name: First build - Cache miss expected
+        run: |
+          echo "⏱️  First build (downloading wrapper + dependencies)..."
+          time ./mvnw clean package -DskipTests
+      
+      - name: Show what got cached
+        run: |
+          echo "=== Maven Repository Cache ==="
+          du -sh ~/.m2/repository
+          echo ""
+          echo "=== Maven Wrapper Cache (NEW in PR #453) ==="
+          if [ -d ~/.m2/wrapper/dists ]; then
+            du -sh ~/.m2/wrapper/dists
+            echo ""
+            echo "Wrapper distribution files:"
+            find ~/.m2/wrapper/dists -type f
+          else
+            echo "❌ Wrapper cache directory NOT created"
+          fi
+      
+      - name: Verify cache key components
+        run: |
+          echo "=== Cache Key Components ==="
+          echo "OS: ${{ runner.os }}"
+          echo "Cache type: maven"
+          echo ""
+          echo "Hash of pom.xml:"
+          sha256sum pom.xml
+          echo ""
+          if [ -f .mvn/wrapper/maven-wrapper.properties ]; then
+            echo "Hash of maven-wrapper.properties:"
+            sha256sum .mvn/wrapper/maven-wrapper.properties
+          fi
+  
+  test-cache-performance-comparison:
+    name: Compare with and without wrapper caching
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Test WITHOUT wrapper properties in cache-dependency-path
+        uses: actions/setup-java@main
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: 'pom.xml'
+      
+      - name: First build - measure time
+        run: |
+          echo "⏱️  Build WITHOUT wrapper.properties in cache path..."
+          START=$(date +%s)
+          ./mvnw clean package -DskipTests
+          END=$(date +%s)
+          DURATION=$((END - START))
+          echo "Build took: ${DURATION} seconds"
+          echo "BUILD_TIME_NO_WRAPPER=${DURATION}" >> $GITHUB_ENV
+      
+      - name: Check wrapper cache
+        run: |
+          if [ -d ~/.m2/wrapper/dists ]; then
+            echo "✅ Wrapper cached anyway (good!)"
+            du -sh ~/.m2/wrapper/dists
+          else
+            echo "❌ Wrapper NOT cached"
+          fi
+  
+  test-wrapper-version-change:
+    name: Test cache invalidation when wrapper version changes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Ensure wrapper properties exists
+        run: |
+          mkdir -p .mvn/wrapper
+          echo "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.5/apache-maven-3.9.5-bin.zip" > .mvn/wrapper/maven-wrapper.properties
+          echo "wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar" >> .mvn/wrapper/maven-wrapper.properties
+      
+      - name: Set up JDK with Maven 3.9.5
+        uses: actions/setup-java@main
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            pom.xml
+            .mvn/wrapper/maven-wrapper.properties
+      
+      - name: Build with Maven 3.9.5
+        run: |
+          echo "Building with Maven 3.9.5..."
+          ./mvnw --version
+          ./mvnw clean package -DskipTests
+      
+      - name: Change wrapper version to 3.9.6
+        run: |
+          echo "Changing wrapper version to 3.9.6..."
+          sed -i 's/3.9.5/3.9.6/g' .mvn/wrapper/maven-wrapper.properties
+          cat .mvn/wrapper/maven-wrapper.properties
+      
+      - name: Setup Java again (should detect change)
+        uses: actions/setup-java@main
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            pom.xml
+            .mvn/wrapper/maven-wrapper.properties
+      
+      - name: Build with Maven 3.9.6
+        run: |
+          echo "Building with Maven 3.9.6 (cache should be invalidated)..."
+          ./mvnw --version
+          ./mvnw clean package -DskipTests
+      
+      - name: Verify new wrapper was downloaded
+        run: |
+          echo "Checking wrapper cache contents:"
+          find ~/.m2/wrapper/dists -type d
+  
+  test-multi-path-patterns:
+    name: Test wildcard patterns in cache-dependency-path
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK with wildcard pattern
+        uses: actions/setup-java@main
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            **/pom.xml
+            **/.mvn/wrapper/maven-wrapper.properties
+      
+      - name: Find all matching files
+        run: |
+          echo "=== Files matching **/pom.xml ==="
+          find . -name "pom.xml" -type f || echo "None found"
+          echo ""
+          echo "=== Files matching **/.mvn/wrapper/maven-wrapper.properties ==="
+          find . -path "*/.mvn/wrapper/maven-wrapper.properties" -type f || echo "None found"
+      
+      - name: Build
+        run: ./mvnw clean package -DskipTests
+      
+      - name: Verify caching worked
+        run: |
+          echo "=== Final Cache State ==="
+          echo "Dependencies:"
+          du -sh ~/.m2/repository
+          echo ""
+          echo "Wrapper:"
+          du -sh ~/.m2/wrapper/dists || echo "Not cached"
+  
+  test-cache-restore-on-second-run:
+    name: Test cache restoration on subsequent runs
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK (First setup)
+        uses: actions/setup-java@main
+        id: setup-java-1
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            **/pom.xml
+            .mvn/wrapper/maven-wrapper.properties
+      
+      - name: First build
+        run: |
+          echo "=== First Build ==="
+          time ./mvnw clean package -DskipTests
+      
+      - name: Save cache state
+        run: |
+          echo "Saving cache state..."
+          CACHE_SIZE=$(du -sb ~/.m2/repository | cut -f1)
+          WRAPPER_SIZE=$(du -sb ~/.m2/wrapper 2>/dev/null | cut -f1 || echo "0")
+          echo "CACHE_SIZE=${CACHE_SIZE}" >> $GITHUB_ENV
+          echo "WRAPPER_SIZE=${WRAPPER_SIZE}" >> $GITHUB_ENV
+          echo "Repository cache: ${CACHE_SIZE} bytes"
+          echo "Wrapper cache: ${WRAPPER_SIZE} bytes"
+      
+      - name: Clean local caches
+        run: |
+          echo "Removing local caches to simulate fresh runner..."
+          rm -rf ~/.m2/repository
+          rm -rf ~/.m2/wrapper
+      
+      - name: Set up JDK (Second setup - should restore cache)
+        uses: actions/setup-java@main
+        id: setup-java-2
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            **/pom.xml
+            .mvn/wrapper/maven-wrapper.properties
+      
+      - name: Verify cache was restored
+        run: |
+          echo "=== Cache Restoration Check ==="
+          if [ -d ~/.m2/repository ]; then
+            NEW_CACHE_SIZE=$(du -sb ~/.m2/repository | cut -f1)
+            echo "✅ Repository cache restored: ${NEW_CACHE_SIZE} bytes"
+          else
+            echo "❌ Repository cache NOT restored"
+          fi
+          
+          if [ -d ~/.m2/wrapper ]; then
+            NEW_WRAPPER_SIZE=$(du -sb ~/.m2/wrapper | cut -f1)
+            echo "✅ Wrapper cache restored: ${NEW_WRAPPER_SIZE} bytes"
+          else
+            echo "❌ Wrapper cache NOT restored"
+          fi
+      
+      - name: Second build (should be faster)
+        run: |
+          echo "=== Second Build (with restored cache) ==="
+          time ./mvnw clean package -DskipTests
