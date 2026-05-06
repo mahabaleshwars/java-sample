@@ -11,7 +11,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Set up JDK 17 with Maven cache
-        uses: actions/setup-java@v5
+        uses: yeikel/setup-java@cache/mvn-wrapper
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -23,7 +23,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Set up JDK 17 with Maven cache
-        uses: actions/setup-java@v5
+        uses: yeikel/setup-java@cache/mvn-wrapper
         with:
           java-version: '17'
           distribution: 'temurin'
