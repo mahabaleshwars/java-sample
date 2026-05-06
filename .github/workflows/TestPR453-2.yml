@@ -17,7 +17,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
   validate-wrapper-cache-dependency-path:
-    name: Validate Maven Wrapper Caching (Without cache-dependency-path)
+    name: Validate Maven Wrapper Caching (With cache-dependency-path)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
