@@ -16,6 +16,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
+      - name: Run Maven to populate cache
+        run: mvn dependency:resolve --no-transfer-progress
   validate-wrapper-cache-dependency-path:
     name: Validate Maven Wrapper Caching (With cache-dependency-path)
     runs-on: ubuntu-latest
@@ -30,4 +32,6 @@ jobs:
           cache: 'maven'
           cache-dependency-path: |
             .mvn/wrapper/maven-wrapper.properties
+      - name: Run Maven to populate cache
+        run: mvn dependency:resolve --no-transfer-progress
     
