@@ -1,0 +1,33 @@
+name: Validate PR 453 - Maven Wrapper Cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate-wrapper-cache:
+    name: Validate Maven Wrapper Caching (Without cache-dependency-path)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up JDK 17 with Maven cache
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+  validate-wrapper-cache-dependency-path:
+    name: Validate Maven Wrapper Caching (Without cache-dependency-path)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up JDK 17 with Maven cache
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            .mvn/wrapper/maven-wrapper.properties
+    
