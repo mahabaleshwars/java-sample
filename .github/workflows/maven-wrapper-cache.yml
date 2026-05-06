@@ -1,0 +1,47 @@
+name: Maven with Wrapper Cache Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: |
+            **/pom.xml
+            .mvn/wrapper/maven-wrapper.properties
+      
+      - name: Show tracked files for caching
+        run: |
+          echo "=== pom.xml files ==="
+          find . -name "pom.xml"
+          echo ""
+          echo "=== Maven wrapper properties ==="
+          cat .mvn/wrapper/maven-wrapper.properties || echo "No wrapper properties found"
+      
+      - name: Cache locations
+        run: |
+          echo "Dependencies cached at: ~/.m2/repository"
+          echo "Maven wrapper cached at: ~/.m2/wrapper/dists"
+      
+      - name: Build with Maven Wrapper
+        run: ./mvnw clean install
+      
+      - name: Show both cache directories
+        run: |
+          echo "=== Dependencies ==="
+          du -sh ~/.m2/repository || echo "Not created"
+          echo ""
+          echo "=== Wrapper distributions ==="
+          du -sh ~/.m2/wrapper/dists || echo "Not created"
+          ls -la ~/.m2/wrapper/dists || echo "Not created"
