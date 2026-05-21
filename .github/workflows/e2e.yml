@@ -1,0 +1,397 @@
+name: Validate Java e2e
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-java-major-versions:
+    name: ${{ matrix.distribution }} ${{ matrix.version }} (jdk-x64) - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution: [
+            'temurin',
+            'adopt',
+            'adopt-openj9',
+            'zulu',
+            'liberica',
+            'microsoft',
+            'semeru',
+            'corretto',
+            'dragonwell',
+            'sapmachine',
+            'jetbrains'
+          ] # internally 'adopt-hotspot' is the same as 'adopt'
+        version: ['21', '11', '17']
+        exclude:
+          # JetBrains Runtime does not publish JDK 11
+          - distribution: 'jetbrains'
+            version: '11'
+          # Microsoft Build of OpenJDK starts at 17
+          - distribution: 'microsoft'
+            version: '11'
+          # Dragonwell does not provide a stable 21 build
+          - distribution: 'dragonwell'
+            version: '21'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-major-minor-versions:
+    name: ${{ matrix.distribution }} ${{ matrix.version }} (jdk-x64) - ${{ matrix.os }}
+    needs: setup-java-major-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution: ['temurin', 'zulu', 'liberica']
+        version:
+          - '11.0'
+          - '21.0'
+          - '17.0.7+7'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  setup-java-check-latest:
+    name: ${{ matrix.distribution }} - check-latest flag - ${{ matrix.os }}
+    needs: setup-java-major-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution:
+          [
+            'temurin',
+            'zulu',
+            'liberica',
+            'dragonwell',
+            'sapmachine',
+            'jetbrains'
+          ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version: 17
+          check-latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "17" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-multiple-jdks:
+    name: ${{ matrix.distribution }} - multiple jdks - ${{ matrix.os }}
+    needs: setup-java-major-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution:
+          [
+            'temurin',
+            'zulu',
+            'liberica',
+            'dragonwell',
+            'sapmachine',
+            'jetbrains'
+          ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version: |
+            11
+            17
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify Java env variables
+        run: |
+          $versionsArr = "11","17"
+          foreach ($version in $versionsArr)
+          {
+            $envName = "JAVA_HOME_${version}_${env:RUNNER_ARCH}"
+            $JavaVersionPath = [Environment]::GetEnvironmentVariable($envName)
+            if (-not (Test-Path "$JavaVersionPath")) {
+              Write-Host "$envName is not found"
+              exit 1
+            }
+          }
+        shell: pwsh
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "17" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-ea-versions-zulu:
+    name: zulu ${{ matrix.version }} (jdk-x64) - ${{ matrix.os }}
+    needs: setup-java-major-minor-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        version: ['17-ea', '15.0.0-ea.14']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: zulu
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-ea-versions-temurin:
+    name: temurin ${{ matrix.version }} (jdk-x64) - ${{ matrix.os }}
+    needs: setup-java-major-minor-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        version: ['17-ea']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: temurin
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-ea-versions-sapmachine:
+    name: sapmachine ${{ matrix.version }} (jdk-x64) - ${{ matrix.os }}
+    needs: setup-java-major-minor-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        version: ['17-ea', '21-ea']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: sapmachine
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-custom-package-type:
+    name: ${{ matrix.distribution }} ${{ matrix.version }} (${{ matrix.java-package }}-x64) - ${{ matrix.os }}
+    needs: setup-java-major-minor-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution:
+          ['temurin', 'zulu', 'liberica', 'semeru', 'sapmachine', 'jetbrains']
+        java-package: ['jre']
+        version: ['17.0']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          java-version: ${{ matrix.version }}
+          java-package: ${{ matrix.java-package }}
+          distribution: ${{ matrix.distribution }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  # Only Liberica and Zulu provide x86
+  setup-java-x86:
+    name: ${{ matrix.distribution }} ${{ matrix.version }} (jdk-x86 }}) - ${{ matrix.os }}
+    needs: setup-java-major-minor-versions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution: ['liberica', 'zulu', 'corretto']
+        version: ['11']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version: ${{ matrix.version }}
+          architecture: 'x86'
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-version-both-version-inputs-presents:
+    name: ${{ matrix.distribution }} version (should be from input) - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution: ['temurin', 'microsoft', 'corretto']
+        java-version-file: ['.java-version', '.tool-versions']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Create .java-version file
+        shell: bash
+        run: echo "17" > .java-version
+      - name: Create .tool-versions file
+        shell: bash
+        run: echo "java 17" > .tool-versions
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version: 11
+          java-version-file: ${{ matrix.java-version-file }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "11" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-version-from-file-major-notation:
+    name: ${{ matrix.distribution }} version from file X - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution: ['temurin', 'zulu', 'liberica', 'microsoft', 'corretto']
+        java-version-file: ['.java-version', '.tool-versions']
+        exclude:
+          # Microsoft Build of OpenJDK starts at 17
+          - distribution: 'microsoft'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Create .java-version file
+        shell: bash
+        run: echo "11" > .java-version
+      - name: Create .tool-versions file
+        shell: bash
+        run: echo "java 11" > .tool-versions
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version-file: ${{ matrix.java-version-file }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "11" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-version-from-file-major-minor-patch-notation:
+    name: ${{ matrix.distribution }} version from file X.Y.Z - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution: ['adopt', 'adopt-openj9', 'zulu']
+        java-version-file: ['.java-version', '.tool-versions']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Create .java-version file
+        shell: bash
+        run: echo "17.0.10" > .java-version
+      - name: Create .tool-versions file
+        shell: bash
+        run: echo "java 17.0.10" > .tool-versions
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version-file: ${{ matrix.java-version-file }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "17.0.10" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  setup-java-version-from-file-major-minor-patch-with-dist:
+    name: ${{ matrix.distribution }} version from file '${{ matrix.java-version-file }}' - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [production-Partner-RHEL9-X64, production-Partner-RHEL10-X64]
+        distribution: ['adopt', 'zulu', 'liberica']
+        java-version-file: ['.java-version', '.tool-versions', '.sdkmanrc']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Create .java-version file
+        shell: bash
+        run: echo "openjdk64-17.0.10" > .java-version
+      - name: Create .tool-versions file
+        shell: bash
+        run: echo "java openjdk64-17.0.10" > .tool-versions
+      - name: Create .sdkmanrc file
+        shell: bash
+        run: echo "java=17.0.10-tem" > .sdkmanrc
+      - name: setup-java
+        uses: actions/setup-java@v5
+        id: setup-java
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version-file: ${{ matrix.java-version-file }}
+      - name: Verify Java
+        run: bash __tests__/verify-java.sh "17.0.10" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
