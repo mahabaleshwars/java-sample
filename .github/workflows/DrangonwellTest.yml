@@ -1,0 +1,24 @@
+name: Test Dragonwell 21 pin
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dragonwell:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        version: ['21.0.11+10', '21.0.10']
+    runs-on: ${{ matrix.os }}
+    name: dragonwell ${{ matrix.version }} - ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Dragonwell ${{ matrix.version }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: dragonwell
+          java-version: ${{ matrix.version }}
+
+      - name: Print java -version
+        run: java -version
