@@ -1,0 +1,24 @@
+
+name: testing-1008
+
+on:
+  workflow_dispatch:
+  
+
+jobs:
+  test-static-node:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: 
+        version: ["25.0.3","25.0.3+480.61"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        # uses: sproctor/setup-java@main 
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: jetbrains
