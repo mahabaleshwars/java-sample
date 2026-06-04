@@ -23,7 +23,7 @@ jobs:
         run: apk add --no-cache bash git tar
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Confirm Alpine marker exists
         run: |
@@ -32,7 +32,7 @@ jobs:
 
       - name: setup-java (Temurin / Alpine)
         id: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.version }}
           distribution: temurin
@@ -69,9 +69,9 @@ jobs:
         version: ['17', '21']
     steps:
       - run: apk add --no-cache bash git tar
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.version }}
           distribution: sapmachine
@@ -88,10 +88,10 @@ jobs:
     container:
       image: alpine:latest
     steps:
-      - uses: actions/checkout@v4   # tests tarball-fallback path (no git pre-installed)
+      - uses: actions/checkout@v6   # tests tarball-fallback path (no git pre-installed)
       - run: apk add --no-cache bash
       - id: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: temurin
@@ -113,10 +113,10 @@ jobs:
           if command -v git >/dev/null 2>&1; then
             echo "git unexpectedly present"; exit 1
           fi
-      - uses: actions/checkout@v4   # must succeed via tarball fallback
+      - uses: actions/checkout@v6   # must succeed via tarball fallback
       - run: apk add --no-cache bash
       - id: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: temurin
@@ -135,9 +135,9 @@ jobs:
       matrix:
         version: ['8', '11', '17', '21']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.version }}
           distribution: temurin
@@ -163,9 +163,9 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: temurin
@@ -182,9 +182,9 @@ jobs:
       image: alpine:3.20
     steps:
       - run: apk add --no-cache bash git tar
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: setup-java
-        uses: ./
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: temurin
@@ -208,13 +208,13 @@ jobs:
       image: alpine:3.20
     steps:
       - run: apk add --no-cache bash git nodejs npm
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install deps
         run: npm ci
       - name: Assert platform detection
         run: |
           node -e "
-            const { TemurinDistribution } = require('./lib/distributions/temurin/installer');
+            const { TemurinDistribution } = require('actions/setup-java@v5lib/distributions/temurin/installer');
             const d = new TemurinDistribution({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
             const platform = d['getPlatformOption']();
             console.log('platform =', platform);
@@ -233,12 +233,12 @@ jobs:
     name: getPlatformOption() returns linux on Ubuntu
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: npm ci
       - name: Assert platform detection
         run: |
           node -e "
-            const { TemurinDistribution } = require('./lib/distributions/temurin/installer');
+            const { TemurinDistribution } = require('actions/setup-java@v5lib/distributions/temurin/installer');
             const d = new TemurinDistribution({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
             const platform = d['getPlatformOption']();
             if (platform !== 'linux') { console.error('got', platform); process.exit(1); }
