@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # 1. CORE: Alpine detection works (Temurin on musl)
-  # ─────────────────────────────────────────────────────────────
   alpine-temurin-pinned:
     name: temurin ${{ matrix.version }} - alpine:${{ matrix.alpine }}
     runs-on: ubuntu-latest
@@ -41,9 +38,6 @@ jobs:
           fi
           "$JAVA_HOME/bin/java" -version 2>&1 | grep -E "version \"${{ matrix.version }}(\.|\")"
 
-  # ─────────────────────────────────────────────────────────────
-  # 2. SapMachine on Alpine
-  # ─────────────────────────────────────────────────────────────
   alpine-sapmachine:
     name: sapmachine ${{ matrix.version }} - alpine
     runs-on: ubuntu-latest
@@ -61,11 +55,9 @@ jobs:
           java-version: ${{ matrix.version }}
           distribution: sapmachine
       - shell: bash
-        run: "$JAVA_HOME/bin/java" -version 2>&1 | grep -E "version \"${{ matrix.version }}(\.|\")"
+        run: |
+          "$JAVA_HOME/bin/java" -version 2>&1 | grep -E "version \"${{ matrix.version }}(\.|\")"
 
-  # ─────────────────────────────────────────────────────────────
-  # 3. Floating alpine:latest (PR's current YAML)
-  # ─────────────────────────────────────────────────────────────
   alpine-latest-floating:
     name: temurin 21 - alpine:latest
     runs-on: ubuntu-latest
@@ -79,11 +71,9 @@ jobs:
           java-version: '21'
           distribution: temurin
       - shell: bash
-        run: "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "21'
+        run: |
+          "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "21'
 
-  # ─────────────────────────────────────────────────────────────
-  # 4. Edge case: Alpine WITHOUT pre-installed git
-  # ─────────────────────────────────────────────────────────────
   alpine-no-git:
     name: alpine without git
     runs-on: ubuntu-latest
@@ -95,18 +85,16 @@ jobs:
           if command -v git >/dev/null 2>&1; then
             echo "git unexpectedly present"; exit 1
           fi
-      - uses: actions/checkout@v6   # tarball-fallback path
+      - uses: actions/checkout@v6
       - run: apk add --no-cache bash
       - uses: gdams/setup-java@alpine
         with:
           java-version: '17'
           distribution: temurin
       - shell: bash
-        run: "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "17'
+        run: |
+          "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "17'
 
-  # ─────────────────────────────────────────────────────────────
-  # 5. Regression: regular Ubuntu still gets glibc build
-  # ─────────────────────────────────────────────────────────────
   regular-linux-regression:
     name: temurin ${{ matrix.version }} - ubuntu
     runs-on: ubuntu-latest
@@ -126,12 +114,11 @@ jobs:
           set -eux
           LDD_OUT="$(ldd "$JAVA_HOME/bin/java" 2>&1)"
           echo "$LDD_OUT"
-          echo "$LDD_OUT" | grep -qi musl && { echo "❌ got Alpine build on Ubuntu"; exit 1; } || true
+          if echo "$LDD_OUT" | grep -qi musl; then
+            echo "❌ got Alpine build on Ubuntu"; exit 1
+          fi
           "$JAVA_HOME/bin/java" -version
 
-  # ─────────────────────────────────────────────────────────────
-  # 6. Regression: macOS + Windows untouched
-  # ─────────────────────────────────────────────────────────────
   cross-platform-regression:
     name: temurin 17 - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -148,9 +135,6 @@ jobs:
       - run: java -version
         shell: bash
 
-  # ─────────────────────────────────────────────────────────────
-  # 7. Alpine on arm64
-  # ─────────────────────────────────────────────────────────────
   alpine-arm64:
     name: temurin 21 - alpine arm64
     runs-on: ubuntu-24.04-arm
@@ -170,9 +154,6 @@ jobs:
           ldd "$JAVA_HOME/bin/java" 2>&1 | grep -qi musl
           "$JAVA_HOME/bin/java" -version
 
-  # ─────────────────────────────────────────────────────────────
-  # 8. Unit-style assertion: getPlatformOption() == 'alpine-linux'
-  # ─────────────────────────────────────────────────────────────
   detection-unit-check-alpine:
     name: getPlatformOption() == alpine-linux
     runs-on: ubuntu-latest
@@ -204,9 +185,6 @@ jobs:
             if (r !== 'alpine-linux') process.exit(1);
           "
 
-  # ─────────────────────────────────────────────────────────────
-  # 9. Same assertion on plain Linux returns 'linux'
-  # ─────────────────────────────────────────────────────────────
   detection-unit-check-linux:
     name: getPlatformOption() == linux
     runs-on: ubuntu-latest
