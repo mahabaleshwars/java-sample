@@ -12,12 +12,14 @@ jobs:
       fail-fast: false
       matrix: 
         version: ["25.0.3","25.0.3+480.61"]
+        distribution: ['jetbrains','zulu','microsoft','oracle']
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Set up Java
-        uses: sproctor/setup-java@main
+        # uses: sproctor/setup-java@main 
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.version }}
-          distribution: jetbrains
+          distribution: ${{ matrix.distribution }}
