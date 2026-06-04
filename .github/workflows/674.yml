@@ -1,0 +1,246 @@
+name: PR 674 - Alpine Linux E2E Validation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # 1. CORE: Alpine detection works (the actual feature)
+  #    Pinned image + git installed before checkout (Copilot fixes applied)
+  # ─────────────────────────────────────────────────────────────
+  alpine-temurin-pinned:
+    name: temurin ${{ matrix.version }} - alpine:${{ matrix.alpine }} (pinned)
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:${{ matrix.alpine }}
+    strategy:
+      fail-fast: false
+      matrix:
+        alpine: ['3.19', '3.20', '3.21']
+        version: ['8', '11', '17', '21']
+    steps:
+      - name: Install prerequisites (before checkout)
+        run: apk add --no-cache bash git tar
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Confirm Alpine marker exists
+        run: |
+          test -f /etc/alpine-release && cat /etc/alpine-release
+          echo "Alpine version: $(cat /etc/alpine-release)"
+
+      - name: setup-java (Temurin / Alpine)
+        id: setup-java
+        uses: ./
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: temurin
+
+      - name: Verify java works (musl-linked binary)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          "$JAVA_HOME/bin/java" -version
+          # musl check: binary should be linked against ld-musl, NOT glibc
+          ldd "$JAVA_HOME/bin/java" 2>&1 | tee /tmp/ldd.out || true
+          if grep -q "musl" /tmp/ldd.out; then
+            echo "✅ Confirmed musl-linked Temurin (Alpine build)"
+          else
+            echo "❌ Binary is NOT musl-linked — wrong artifact downloaded"
+            exit 1
+          fi
+
+      - name: Run repo verify script
+        run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  # ─────────────────────────────────────────────────────────────
+  # 2. SapMachine on Alpine (other distro that already had Alpine logic)
+  # ─────────────────────────────────────────────────────────────
+  alpine-sapmachine:
+    name: sapmachine ${{ matrix.version }} - alpine
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.20
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['17', '21']
+    steps:
+      - run: apk add --no-cache bash git tar
+      - uses: actions/checkout@v4
+      - id: setup-java
+        uses: ./
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: sapmachine
+      - run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  # ─────────────────────────────────────────────────────────────
+  # 3. Regression: Floating `alpine:latest` (the PR's current setup)
+  #    Validates Copilot's concern #3 — should still work today
+  # ─────────────────────────────────────────────────────────────
+  alpine-latest-floating:
+    name: temurin 21 - alpine:latest (PR's current config)
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:latest
+    steps:
+      - uses: actions/checkout@v4   # tests tarball-fallback path (no git pre-installed)
+      - run: apk add --no-cache bash
+      - id: setup-java
+        uses: ./
+        with:
+          java-version: '21'
+          distribution: temurin
+      - run: bash __tests__/verify-java.sh "21" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  # ─────────────────────────────────────────────────────────────
+  # 4. Edge case: container WITHOUT git (Copilot finding #1)
+  #    Confirms whether actions/checkout's tarball fallback covers us
+  # ─────────────────────────────────────────────────────────────
+  alpine-no-git:
+    name: alpine without git pre-installed
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.20
+    steps:
+      - name: Verify git is NOT in image
+        run: |
+          if command -v git >/dev/null 2>&1; then
+            echo "git unexpectedly present"; exit 1
+          fi
+      - uses: actions/checkout@v4   # must succeed via tarball fallback
+      - run: apk add --no-cache bash
+      - id: setup-java
+        uses: ./
+        with:
+          java-version: '17'
+          distribution: temurin
+      - run: bash __tests__/verify-java.sh "17" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  # ─────────────────────────────────────────────────────────────
+  # 5. REGRESSION: non-Alpine Linux must still resolve to `linux`
+  #    (i.e. PR doesn't break the existing path)
+  # ─────────────────────────────────────────────────────────────
+  regular-linux-regression:
+    name: temurin ${{ matrix.version }} - ubuntu (regression)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['8', '11', '17', '21']
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup-java
+        uses: ./
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: temurin
+      - name: Confirm glibc (NOT musl) build
+        run: |
+          set -eux
+          ldd "$JAVA_HOME/bin/java" | tee /tmp/ldd.out
+          if grep -q "musl" /tmp/ldd.out; then
+            echo "❌ glibc Linux runner got a musl build"; exit 1
+          fi
+          echo "✅ Regular Linux still gets glibc Temurin"
+      - run: bash __tests__/verify-java.sh "${{ matrix.version }}" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  # ─────────────────────────────────────────────────────────────
+  # 6. REGRESSION: macOS + Windows untouched
+  # ─────────────────────────────────────────────────────────────
+  cross-platform-regression:
+    name: temurin 17 - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup-java
+        uses: ./
+        with:
+          java-version: '17'
+          distribution: temurin
+      - run: java -version
+        shell: bash
+
+  # ─────────────────────────────────────────────────────────────
+  # 7. EXTRA: Alpine on arm64 (future-proofing, optional)
+  # ─────────────────────────────────────────────────────────────
+  alpine-arm64:
+    name: temurin 21 - alpine arm64
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: alpine:3.20
+    steps:
+      - run: apk add --no-cache bash git tar
+      - uses: actions/checkout@v4
+      - id: setup-java
+        uses: ./
+        with:
+          java-version: '21'
+          distribution: temurin
+      - name: Confirm aarch64 + musl
+        run: |
+          file "$JAVA_HOME/bin/java" || apk add --no-cache file && file "$JAVA_HOME/bin/java"
+          ldd "$JAVA_HOME/bin/java" 2>&1 | grep -q musl && echo "✅ aarch64 musl build"
+        shell: sh
+      - run: bash __tests__/verify-java.sh "21" "${{ steps.setup-java.outputs.path }}"
+        shell: bash
+
+  # ─────────────────────────────────────────────────────────────
+  # 8. NEGATIVE TEST: Detection logic via unit-style assertion
+  #    Boots Node and exercises the compiled installer directly,
+  #    proving getPlatformOption() returns 'alpine-linux' on Alpine.
+  # ─────────────────────────────────────────────────────────────
+  detection-unit-check:
+    name: getPlatformOption() returns alpine-linux
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.20
+    steps:
+      - run: apk add --no-cache bash git nodejs npm
+      - uses: actions/checkout@v4
+      - name: Install deps
+        run: npm ci
+      - name: Assert platform detection
+        run: |
+          node -e "
+            const { TemurinDistribution } = require('./lib/distributions/temurin/installer');
+            const d = new TemurinDistribution({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
+            const platform = d['getPlatformOption']();
+            console.log('platform =', platform);
+            if (platform !== 'alpine-linux') {
+              console.error('❌ expected alpine-linux, got', platform);
+              process.exit(1);
+            }
+            console.log('✅ getPlatformOption() correctly returned alpine-linux');
+          "
+        shell: sh
+
+  # ─────────────────────────────────────────────────────────────
+  # 9. NEGATIVE TEST: same assertion on plain Linux returns 'linux'
+  # ─────────────────────────────────────────────────────────────
+  detection-unit-check-linux:
+    name: getPlatformOption() returns linux on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - name: Assert platform detection
+        run: |
+          node -e "
+            const { TemurinDistribution } = require('./lib/distributions/temurin/installer');
+            const d = new TemurinDistribution({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
+            const platform = d['getPlatformOption']();
+            if (platform !== 'linux') { console.error('got', platform); process.exit(1); }
+            console.log('✅ regular Linux still returns linux');
+          "
