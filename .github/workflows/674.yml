@@ -41,7 +41,6 @@ jobs:
           elif echo "$LDD_OUT" | grep -qi "not found"; then
             echo "❌ glibc binary on Alpine — PR fix did not take effect"; exit 1
           fi
-          # JDK 8 prints "1.8.0_xxx"; JDK 11+ prints "<major>.x"
           if [ "$V" = "8" ]; then
             EXPECTED='version "1\.8'
           else
@@ -75,7 +74,7 @@ jobs:
           "$JAVA_HOME/bin/java" -version 2>&1 | grep -E "version \"${V}(\\.|\")"
 
   # ─────────────────────────────────────────────────────────────
-  # 3. Floating alpine:latest (PR's current YAML)
+  # 3. Floating alpine:latest
   # ─────────────────────────────────────────────────────────────
   alpine-latest-floating:
     name: temurin 21 - alpine:latest
@@ -195,6 +194,7 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────
   # 8. Unit-style assertion: getPlatformOption() == 'alpine-linux'
+  #    Compiles src/ → lib/ with tsc, then requires the module.
   # ─────────────────────────────────────────────────────────────
   detection-unit-check-alpine:
     name: getPlatformOption() == alpine-linux
@@ -208,23 +208,25 @@ jobs:
           repository: gdams/setup-java
           ref: alpine
           path: setup-java
-      - working-directory: setup-java
+      - name: Install deps
+        working-directory: setup-java
         run: npm ci
-      - working-directory: setup-java
-        shell: sh
+      - name: Compile TS to lib/
+        working-directory: setup-java
+        run: npx tsc
+      - name: Assert detection
+        working-directory: setup-java
+        shell: bash
         run: |
+          test -f ./lib/distributions/temurin/installer.js
           node -e "
-            const fs = require('fs');
-            const p = fs.existsSync('./lib/distributions/temurin/installer.js')
-              ? './lib/distributions/temurin/installer'
-              : './dist/setup/index.js';
-            const m = require(p);
-            const C = m.TemurinDistribution || (m.default && m.default.TemurinDistribution);
-            if (!C) { console.error('no class in', p); process.exit(2); }
-            const d = new C({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
+            const m = require('./lib/distributions/temurin/installer');
+            if (!m.TemurinDistribution) { console.error('TemurinDistribution not exported'); process.exit(2); }
+            const d = new m.TemurinDistribution({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
             const r = d.getPlatformOption();
             console.log('platform =', r);
-            if (r !== 'alpine-linux') process.exit(1);
+            if (r !== 'alpine-linux') { console.error('expected alpine-linux'); process.exit(1); }
+            console.log('✅ getPlatformOption() returned alpine-linux on Alpine');
           "
 
   # ─────────────────────────────────────────────────────────────
@@ -239,20 +241,23 @@ jobs:
           repository: gdams/setup-java
           ref: alpine
           path: setup-java
-      - working-directory: setup-java
+      - name: Install deps
+        working-directory: setup-java
         run: npm ci
-      - working-directory: setup-java
+      - name: Compile TS to lib/
+        working-directory: setup-java
+        run: npx tsc
+      - name: Assert detection
+        working-directory: setup-java
         shell: bash
         run: |
+          test -f ./lib/distributions/temurin/installer.js
           node -e "
-            const fs = require('fs');
-            const p = fs.existsSync('./lib/distributions/temurin/installer.js')
-              ? './lib/distributions/temurin/installer'
-              : './dist/setup/index.js';
-            const m = require(p);
-            const C = m.TemurinDistribution || (m.default && m.default.TemurinDistribution);
-            const d = new C({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
+            const m = require('./lib/distributions/temurin/installer');
+            if (!m.TemurinDistribution) { console.error('TemurinDistribution not exported'); process.exit(2); }
+            const d = new m.TemurinDistribution({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
             const r = d.getPlatformOption();
             console.log('platform =', r);
-            if (r !== 'linux') process.exit(1);
+            if (r !== 'linux') { console.error('expected linux, got', r); process.exit(1); }
+            console.log('✅ regular Linux returned linux');
           "
