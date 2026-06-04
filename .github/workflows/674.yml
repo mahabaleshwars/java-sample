@@ -5,7 +5,7 @@ on:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # 1. CORE: Alpine detection works (the actual feature)
+  # 1. CORE: Alpine detection works (Temurin on musl)
   # ─────────────────────────────────────────────────────────────
   alpine-temurin-pinned:
     name: temurin ${{ matrix.version }} - alpine:${{ matrix.alpine }}
@@ -18,57 +18,28 @@ jobs:
         alpine: ['3.19', '3.20', '3.21']
         version: ['8', '11', '17', '21']
     steps:
-      - name: Install prerequisites (before checkout)
-        run: apk add --no-cache bash git tar coreutils
-
-      - name: Checkout PR head of setup-java
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
-          path: setup-java
-
-      - name: Confirm Alpine marker exists
-        run: |
-          test -f /etc/alpine-release
-          echo "Alpine: $(cat /etc/alpine-release)"
-
-      - name: setup-java (PR build)
-        id: setup-java
-        uses: ./setup-java
+      - run: apk add --no-cache bash git tar
+      - uses: actions/checkout@v6
+      - name: Confirm Alpine
+        run: cat /etc/alpine-release
+      - id: setup-java
+        uses: gdams/setup-java@alpine
         with:
           java-version: ${{ matrix.version }}
           distribution: temurin
-
       - name: Verify java runs on musl
         shell: bash
         run: |
           set -eux
           "$JAVA_HOME/bin/java" -version
-          # Alpine builds are linked against ld-musl-*.so.1
           LDD_OUT="$(ldd "$JAVA_HOME/bin/java" 2>&1 || true)"
           echo "$LDD_OUT"
-          if echo "$LDD_OUT" | grep -qi "musl"; then
-            echo "✅ Confirmed musl-linked Temurin (alpine-linux build)"
+          if echo "$LDD_OUT" | grep -qi musl; then
+            echo "✅ musl-linked Temurin (alpine-linux build)"
           elif echo "$LDD_OUT" | grep -qi "not found"; then
-            echo "❌ glibc binary on Alpine — PR fix did not take effect"
-            exit 1
-          else
-            echo "⚠️ Unrecognized ldd output, but java -version succeeded"
+            echo "❌ glibc binary on Alpine — PR fix did not take effect"; exit 1
           fi
-
-      - name: Inline verify (replaces verify-java.sh)
-        shell: bash
-        env:
-          EXPECTED_VERSION: ${{ matrix.version }}
-          EXPECTED_PATH: ${{ steps.setup-java.outputs.path }}
-        run: |
-          set -eux
-          test -n "$EXPECTED_PATH"
-          test -x "$EXPECTED_PATH/bin/java"
-          OUT="$("$EXPECTED_PATH/bin/java" -version 2>&1)"
-          echo "$OUT"
-          echo "$OUT" | grep -E "version \"${EXPECTED_VERSION}(\.|\")"
+          "$JAVA_HOME/bin/java" -version 2>&1 | grep -E "version \"${{ matrix.version }}(\.|\")"
 
   # ─────────────────────────────────────────────────────────────
   # 2. SapMachine on Alpine
@@ -83,21 +54,14 @@ jobs:
       matrix:
         version: ['17', '21']
     steps:
-      - run: apk add --no-cache bash git tar coreutils
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
-          path: setup-java
-      - id: setup-java
-        uses: ./setup-java
+      - run: apk add --no-cache bash git tar
+      - uses: actions/checkout@v6
+      - uses: gdams/setup-java@alpine
         with:
           java-version: ${{ matrix.version }}
           distribution: sapmachine
       - shell: bash
-        run: |
-          set -eux
-          "$JAVA_HOME/bin/java" -version 2>&1 | grep -E "version \"${{ matrix.version }}(\.|\")"
+        run: "$JAVA_HOME/bin/java" -version 2>&1 | grep -E "version \"${{ matrix.version }}(\.|\")"
 
   # ─────────────────────────────────────────────────────────────
   # 3. Floating alpine:latest (PR's current YAML)
@@ -109,24 +73,16 @@ jobs:
       image: alpine:latest
     steps:
       - run: apk add --no-cache bash git tar
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
-          path: setup-java
-      - id: setup-java
-        uses: ./setup-java
+      - uses: actions/checkout@v6
+      - uses: gdams/setup-java@alpine
         with:
           java-version: '21'
           distribution: temurin
       - shell: bash
-        run: |
-          set -eux
-          "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "21'
+        run: "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "21'
 
   # ─────────────────────────────────────────────────────────────
   # 4. Edge case: Alpine WITHOUT pre-installed git
-  #    Tests actions/checkout's tarball-fallback path
   # ─────────────────────────────────────────────────────────────
   alpine-no-git:
     name: alpine without git
@@ -139,22 +95,14 @@ jobs:
           if command -v git >/dev/null 2>&1; then
             echo "git unexpectedly present"; exit 1
           fi
-      - name: Checkout PR (tarball fallback)
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
-          path: setup-java
+      - uses: actions/checkout@v6   # tarball-fallback path
       - run: apk add --no-cache bash
-      - id: setup-java
-        uses: ./setup-java
+      - uses: gdams/setup-java@alpine
         with:
           java-version: '17'
           distribution: temurin
       - shell: bash
-        run: |
-          set -eux
-          "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "17'
+        run: "$JAVA_HOME/bin/java" -version 2>&1 | grep -E 'version "17'
 
   # ─────────────────────────────────────────────────────────────
   # 5. Regression: regular Ubuntu still gets glibc build
@@ -167,13 +115,8 @@ jobs:
       matrix:
         version: ['8', '11', '17', '21']
     steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
-          path: setup-java
-      - id: setup-java
-        uses: ./setup-java
+      - uses: actions/checkout@v6
+      - uses: gdams/setup-java@alpine
         with:
           java-version: ${{ matrix.version }}
           distribution: temurin
@@ -183,9 +126,7 @@ jobs:
           set -eux
           LDD_OUT="$(ldd "$JAVA_HOME/bin/java" 2>&1)"
           echo "$LDD_OUT"
-          if echo "$LDD_OUT" | grep -qi "musl"; then
-            echo "❌ glibc runner got an Alpine build"; exit 1
-          fi
+          echo "$LDD_OUT" | grep -qi musl && { echo "❌ got Alpine build on Ubuntu"; exit 1; } || true
           "$JAVA_HOME/bin/java" -version
 
   # ─────────────────────────────────────────────────────────────
@@ -199,12 +140,8 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
-          path: setup-java
-      - uses: ./setup-java
+      - uses: actions/checkout@v6
+      - uses: gdams/setup-java@alpine
         with:
           java-version: '17'
           distribution: temurin
@@ -212,7 +149,7 @@ jobs:
         shell: bash
 
   # ─────────────────────────────────────────────────────────────
-  # 7. Alpine on arm64 (optional — needs arm runners)
+  # 7. Alpine on arm64
   # ─────────────────────────────────────────────────────────────
   alpine-arm64:
     name: temurin 21 - alpine arm64
@@ -221,13 +158,8 @@ jobs:
       image: alpine:3.20
     steps:
       - run: apk add --no-cache bash git tar file
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
-          path: setup-java
-      - id: setup-java
-        uses: ./setup-java
+      - uses: actions/checkout@v6
+      - uses: gdams/setup-java@alpine
         with:
           java-version: '21'
           distribution: temurin
@@ -239,8 +171,7 @@ jobs:
           "$JAVA_HOME/bin/java" -version
 
   # ─────────────────────────────────────────────────────────────
-  # 8. Unit-style assertion: getPlatformOption() returns 'alpine-linux'
-  #    Loads the PR's compiled lib directly via Node.
+  # 8. Unit-style assertion: getPlatformOption() == 'alpine-linux'
   # ─────────────────────────────────────────────────────────────
   detection-unit-check-alpine:
     name: getPlatformOption() == alpine-linux
@@ -249,32 +180,28 @@ jobs:
       image: alpine:3.20
     steps:
       - run: apk add --no-cache bash git nodejs npm
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
+          repository: gdams/setup-java
+          ref: alpine
           path: setup-java
-      - name: Install deps & build
-        working-directory: setup-java
-        run: |
-          npm ci
-          npm run build || true   # build lib/ if package has a build script
-      - name: Assert detection
-        working-directory: setup-java
+      - working-directory: setup-java
+        run: npm ci
+      - working-directory: setup-java
         shell: sh
         run: |
           node -e "
-            const path = require('path');
-            const modPath = require('fs').existsSync('./lib/distributions/temurin/installer.js')
+            const fs = require('fs');
+            const p = fs.existsSync('./lib/distributions/temurin/installer.js')
               ? './lib/distributions/temurin/installer'
               : './dist/setup/index.js';
-            const mod = require(modPath);
-            const Cls = mod.TemurinDistribution || (mod.default && mod.default.TemurinDistribution);
-            if (!Cls) { console.error('Could not load TemurinDistribution from', modPath); process.exit(2); }
-            const d = new Cls({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
-            const p = d.getPlatformOption ? d.getPlatformOption() : d['getPlatformOption']();
-            console.log('platform =', p);
-            if (p !== 'alpine-linux') { console.error('expected alpine-linux'); process.exit(1); }
+            const m = require(p);
+            const C = m.TemurinDistribution || (m.default && m.default.TemurinDistribution);
+            if (!C) { console.error('no class in', p); process.exit(2); }
+            const d = new C({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
+            const r = d.getPlatformOption();
+            console.log('platform =', r);
+            if (r !== 'alpine-linux') process.exit(1);
           "
 
   # ─────────────────────────────────────────────────────────────
@@ -284,30 +211,25 @@ jobs:
     name: getPlatformOption() == linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          repository: ${{ env.PR_REPO }}
-          ref: ${{ env.PR_REF }}
+          repository: gdams/setup-java
+          ref: alpine
           path: setup-java
-      - name: Install deps & build
-        working-directory: setup-java
-        run: |
-          npm ci
-          npm run build || true
-      - name: Assert detection
-        working-directory: setup-java
+      - working-directory: setup-java
+        run: npm ci
+      - working-directory: setup-java
         shell: bash
         run: |
           node -e "
             const fs = require('fs');
-            const modPath = fs.existsSync('./lib/distributions/temurin/installer.js')
+            const p = fs.existsSync('./lib/distributions/temurin/installer.js')
               ? './lib/distributions/temurin/installer'
               : './dist/setup/index.js';
-            const mod = require(modPath);
-            const Cls = mod.TemurinDistribution || (mod.default && mod.default.TemurinDistribution);
-            if (!Cls) { console.error('no class'); process.exit(2); }
-            const d = new Cls({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
-            const p = d.getPlatformOption ? d.getPlatformOption() : d['getPlatformOption']();
-            if (p !== 'linux') { console.error('got', p); process.exit(1); }
-            console.log('✅ regular Linux returns linux');
+            const m = require(p);
+            const C = m.TemurinDistribution || (m.default && m.default.TemurinDistribution);
+            const d = new C({ version: '21', architecture: 'x64', packageType: 'jdk', checkLatest: false });
+            const r = d.getPlatformOption();
+            console.log('platform =', r);
+            if (r !== 'linux') process.exit(1);
           "
