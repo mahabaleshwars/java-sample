@@ -9,15 +9,12 @@ jobs:
   #    comparing the released v5 (buggy) vs the PR branch (fixed).
   # ─────────────────────────────────────────────────────────────
   action-e2e:
-    name: ${{ matrix.action }} | ${{ matrix.java-version }} | ${{ matrix.os }}
+    name:   ${{ matrix.java-version }} | ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        action:
-          - actions/setup-java@v5          # released — expected to THROW on +build input
-          - sproctor/setup-java@main       # PR #1009 — expected to PASS
         java-version:
           - '25'                # bare major  -> satisfies() path (safe)
           - '25.0.3'            # full, no build -> satisfies() path (safe)
@@ -26,17 +23,14 @@ jobs:
       - name: Setup JBR (capture outcome, do not fail job)
         id: setup
         continue-on-error: true
-        uses: ${{ matrix.action }}
+        uses: actions/setup-java@v5
         with:
           distribution: jetbrains
           java-version: ${{ matrix.java-version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # avoids GitHub API rate limits
-
+       
       - name: Report result
         shell: bash
         run: |
-          echo "action       = ${{ matrix.action }}"        >> "$GITHUB_STEP_SUMMARY"
           echo "java-version = ${{ matrix.java-version }}"   >> "$GITHUB_STEP_SUMMARY"
           echo "os           = ${{ matrix.os }}"             >> "$GITHUB_STEP_SUMMARY"
           echo "outcome      = ${{ steps.setup.outcome }}"   >> "$GITHUB_STEP_SUMMARY"
@@ -51,42 +45,3 @@ jobs:
         if: steps.setup.outcome == 'success'
         run: java -version
 
-  # ─────────────────────────────────────────────────────────────
-  # 2) Unit-level repro: call the exact isVersionSatisfies logic
-  #    against a malformed 4-segment candidate, with and without
-  #    the PR guard, so you can see precisely which branch throws.
-  # ─────────────────────────────────────────────────────────────
-  logic-repro:
-    name: isVersionSatisfies branch trace
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install semver (same major as the action)
-        run: npm init -y >/dev/null 2>&1 && npm i semver@^7.6.0 >/dev/null 2>&1
-
-      - name: Run trace
-        run: node repro.mjs
-        # repro.mjs is created in the next step's working dir; inline below
-      - name: Write repro script
-        run: |
-          cat > repro.mjs <<'EOF'
-          import semver from 'semver';
-
-          // The malformed candidate JBR publishes (4 numeric segments -> invalid semver)
-          const BAD_CANDIDATE = '17.0.8.1+1080.1';
-
-          // CURRENT logic (released v5) — no guard
-          function current(range, version) {
-            if (semver.valid(range)) {
-              const r = semver.parse(range);
-              if (r && r.build?.length > 0) {
-                return semver.compareBuild(range, version) === 0; // throws on bad version
-              }
-            }
-            return semver.satisfies(version, range);
-          }
-
-          // FIXED logic (PR #1009) — guard candidate first
-          function fixed(range, version) {
-            if (!semver.valid(version)) return false;
-            return current(range, version);
-          
