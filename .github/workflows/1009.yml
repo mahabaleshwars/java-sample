@@ -17,13 +17,13 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         java-version:
           - '25'                # bare major  -> satisfies() path (safe)
-          - '25.0.3b508.4'            # full, no build -> satisfies() path (safe)
+          - '25.0.3'            # full, no build -> satisfies() path (safe)
           - '25.0.3+480.61'     # full + build  -> compareBuild() path (the crash)
     steps:
       - name: Setup JBR (capture outcome, do not fail job)
         id: setup
         continue-on-error: true
-        uses: actions/setup-java@v5
+        uses: sproctor/setup-java@main
         with:
           distribution: jetbrains
           java-version: ${{ matrix.java-version }}
