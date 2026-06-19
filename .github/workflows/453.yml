@@ -1,0 +1,45 @@
+name: Validate Maven Wrapper Caching
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-maven-wrapper-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create Maven Wrapper files
+        run: |
+          mkdir -p .mvn/wrapper
+          cat > pom.xml << 'EOF'
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.example</groupId>
+            <artifactId>test</artifactId>
+            <version>1.0.0</version>
+          </project>
+          EOF
+          cat > .mvn/wrapper/maven-wrapper.properties << 'EOF'
+          distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip
+          wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar
+          EOF
+
+      - name: Setup Java with Maven caching
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run Maven Wrapper
+        run: |
+          mvn -N wrapper:wrapper
+          ./mvnw --version
+
+      - name: Verify cache paths exist
+        run: |
+          echo "Checking ~/.m2/repository..."
+          ls -la ~/.m2/repository || echo "Repository cache empty (expected on first run)"
+          echo "Checking ~/.m2/wrapper/dists..."
+          ls -la ~/.m2/wrapper/dists || echo "Wrapper cache empty (expected on first run)"
