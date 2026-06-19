@@ -26,7 +26,7 @@ jobs:
           EOF
 
       - name: Setup Java with Maven caching
-        uses: actions/setup-java@v5
+        uses: mahabaleshwars/setup-java/tree@maven-wrapper-cache
         with:
           distribution: temurin
           java-version: 21
